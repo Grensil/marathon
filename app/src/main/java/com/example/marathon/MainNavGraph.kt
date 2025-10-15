@@ -53,28 +53,28 @@ fun MainScreen() {
                     )
                 }
 
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable {
-                            navController.navigate(MainRoute.Friends.path)
-                        }, contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.icon_friends),
-                        contentDescription = null
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable {
-                            navController.navigate(MainRoute.MyPage.path)
-                        }, contentAlignment = Alignment.Center
-                ) {
-                    Image(painter = painterResource(R.drawable.icon_my), contentDescription = null)
-                }
+//                Box(
+//                    modifier = Modifier
+//                        .weight(1f)
+//                        .clickable {
+//                            navController.navigate(MainRoute.Friends.path)
+//                        }, contentAlignment = Alignment.Center
+//                ) {
+//                    Image(
+//                        painter = painterResource(R.drawable.icon_friends),
+//                        contentDescription = null
+//                    )
+//                }
+//
+//                Box(
+//                    modifier = Modifier
+//                        .weight(1f)
+//                        .clickable {
+//                            navController.navigate(MainRoute.MyPage.path)
+//                        }, contentAlignment = Alignment.Center
+//                ) {
+//                    Image(painter = painterResource(R.drawable.icon_my), contentDescription = null)
+//                }
             }
         }
     ) { innerPadding ->
@@ -99,7 +99,7 @@ fun MainScreen() {
 fun MainNavGraph(navController: NavHostController) {
 
     NavHost(
-        navController = navController, startDestination = MainRoute.History
+        navController = navController, startDestination = MainRoute.History.path
     ) {
         composable(route = MainRoute.History.path) {
             HistoryScreen()
