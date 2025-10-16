@@ -11,11 +11,7 @@ class StartRunningSessionUseCase @Inject constructor(
     private val runningRepository: RunningRepository
 ) {
     suspend operator fun invoke(exerciseType: ExerciseType = ExerciseType.RUNNING): Result<String> {
-        // 먼저 권한 확인
-        if (!runningRepository.checkPermissions()) {
-            return Result.failure(Exception("Health Connect permissions not granted"))
-        }
-
+        // Health Connect 권한 체크 제거 - 폰 센서만 사용
         // 세션 시작
         return runningRepository.startExerciseSession(exerciseType)
     }

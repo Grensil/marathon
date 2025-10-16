@@ -41,6 +41,15 @@ class RunningRepositoryImpl @Inject constructor(
         sessionStartTime = startTime
         Log.d(TAG, "startExerciseSession called, sessionStartTime=$sessionStartTime")
 
+        // Health Connect를 건너뛰고 바로 폰 센서 기반 시뮬레이션 모드로 시작
+        val simulationSessionId = "simulation_${System.currentTimeMillis()}"
+        currentSessionId = simulationSessionId
+        totalSteps = 0
+        previousSteps = 0
+        Log.d(TAG, "Phone sensor session started: $simulationSessionId")
+        return Result.success(simulationSessionId)
+
+        /* Health Connect를 사용하려면 아래 코드 주석 해제
         return healthConnectDataSource.startExerciseSession(exerciseType, startTime)
             .onSuccess { sessionId ->
                 currentSessionId = sessionId
@@ -57,6 +66,7 @@ class RunningRepositoryImpl @Inject constructor(
                 Log.d(TAG, "Simulation session started: $simulationSessionId (Health Connect failed: ${error.message})")
                 return Result.success(simulationSessionId)
             }
+        */
     }
 
     override suspend fun stopExerciseSession(sessionId: String): Result<Unit> {
@@ -83,9 +93,8 @@ class RunningRepositoryImpl @Inject constructor(
     }
 
     override fun observeRunningMetrics(): Flow<RunningMetrics> = flow {
-        val startTime = sessionStartTime ?: Instant.now()
         stepCounterSensor.resetSession()
-        Log.d(TAG, "observeRunningMetrics started, startTime=$startTime, currentSessionId=$currentSessionId")
+        Log.d(TAG, "observeRunningMetrics started, currentSessionId=$currentSessionId")
 
         // 걸음 센서와 타이머를 결합
         stepCounterSensor.observeSteps().collect { steps ->
@@ -96,8 +105,11 @@ class RunningRepositoryImpl @Inject constructor(
                 return@collect
             }
 
+            // startTime을 여기서 참조 (Flow 생성 시점이 아님)
+            val startTime = sessionStartTime ?: Instant.now()
             val currentTime = Instant.now()
             val elapsedSeconds = java.time.Duration.between(startTime, currentTime).seconds
+            Log.d(TAG, "Calculating metrics: startTime=$startTime, elapsed=$elapsedSeconds seconds")
 
             // 걸음 수 기반 계산
             totalSteps = steps

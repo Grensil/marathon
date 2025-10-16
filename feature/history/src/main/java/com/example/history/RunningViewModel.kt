@@ -100,46 +100,35 @@ class RunningViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            startRunningSessionUseCase(ExerciseType.RUNNING)
-                .onSuccess { sessionId ->
-                    Log.d(TAG, "Session started successfully: $sessionId")
-                    sessionStartTime = System.currentTimeMillis()
-                    _state.update {
-                        it.copy(
-                            isRunning = true,
-                            sessionId = sessionId,
-                            isLoading = false,
-                            elapsedTime = 0L
-                        )
-                    }
+            val result = startRunningSessionUseCase(ExerciseType.RUNNING)
+            Log.d(TAG, "startRunningSessionUseCase result: isSuccess=${result.isSuccess}, isFailure=${result.isFailure}")
 
-                    // 메트릭 관찰 시작
-                    startMetricsObservation()
-
-                    // 타이머 시작
-                    startTimer()
+            result.onSuccess { sessionId ->
+                Log.d(TAG, "Session started successfully: $sessionId")
+                sessionStartTime = System.currentTimeMillis()
+                _state.update {
+                    it.copy(
+                        isRunning = true,
+                        sessionId = sessionId,
+                        isLoading = false,
+                        elapsedTime = 0L
+                    )
                 }
-                .onFailure { error ->
-                    Log.e(TAG, "Failed to start session, starting simulation mode: ${error.message}")
-                    // Health Connect 없이도 시뮬레이션 모드로 실행
-                    val simulationSessionId = "simulation_${System.currentTimeMillis()}"
-                    sessionStartTime = System.currentTimeMillis()
-                    _state.update {
-                        it.copy(
-                            isRunning = true,
-                            sessionId = simulationSessionId,
-                            isLoading = false,
-                            elapsedTime = 0L,
-                            error = null
-                        )
-                    }
 
-                    // 메트릭 관찰 시작 (시뮬레이션 모드)
-                    startMetricsObservation()
+                // 메트릭 관찰 시작
+                startMetricsObservation()
 
-                    // 타이머 시작
-                    startTimer()
+                // 타이머 시작
+                startTimer()
+            }.onFailure { error ->
+                Log.e(TAG, "This should not happen! Failed to start session: ${error.message}", error)
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Failed to start: ${error.message}"
+                    )
                 }
+            }
         }
     }
 
