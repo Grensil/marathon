@@ -23,3 +23,4 @@ rootProject.name = "Marathon"
 include(":app")
 include(":feature:history")
 include(":feature:recommend")
+include(":core:healthcare")
