@@ -39,24 +39,14 @@ fun HistoryScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    val requestPermissions = rememberHealthConnectPermissionLauncher { granted ->
-        if (granted) {
-            viewModel.onPermissionGranted()
-        }
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
-        if (!state.hasPermissions) {
-            PermissionRequiredContent(
-                onRequestPermissions = requestPermissions
-            )
-        } else {
-            Column(
+        // Health Connect 권한 체크를 건너뛰고 바로 시뮬레이션 모드로 시작
+        Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -206,7 +196,6 @@ fun HistoryScreen(
                     )
                 }
             }
-        }
     }
 }
 
@@ -266,29 +255,3 @@ private fun MetricCard(
     }
 }
 
-@Composable
-private fun PermissionRequiredContent(
-    onRequestPermissions: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Health Connect Permissions Required",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Please grant Health Connect permissions to use running features.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        Button(onClick = onRequestPermissions) {
-            Text(text = "Request Permissions")
-        }
-    }
-}

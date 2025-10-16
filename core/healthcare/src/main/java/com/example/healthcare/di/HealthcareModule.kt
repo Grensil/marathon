@@ -1,10 +1,14 @@
 package com.example.healthcare.di
 
+import android.content.Context
 import com.example.healthcare.data.repository.RunningRepositoryImpl
+import com.example.healthcare.data.sensor.StepCounterSensor
 import com.example.healthcare.domain.repository.RunningRepository
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -20,4 +24,14 @@ abstract class HealthcareModule {
     abstract fun bindRunningRepository(
         runningRepositoryImpl: RunningRepositoryImpl
     ): RunningRepository
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideStepCounterSensor(
+            @ApplicationContext context: Context
+        ): StepCounterSensor {
+            return StepCounterSensor(context)
+        }
+    }
 }

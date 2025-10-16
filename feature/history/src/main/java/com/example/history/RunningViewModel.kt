@@ -1,5 +1,6 @@
 package com.example.history
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.healthcare.domain.model.ExerciseType
@@ -43,6 +44,10 @@ class RunningViewModel @Inject constructor(
     private val heartRateList = mutableListOf<Int>()
     private val paceList = mutableListOf<Double>()
     private val cadenceList = mutableListOf<Double>()
+
+    companion object {
+        private const val TAG = "RunningViewModel"
+    }
 
     init {
         checkPermissions()
@@ -91,11 +96,13 @@ class RunningViewModel @Inject constructor(
      * 러닝 시작
      */
     fun startRunning() {
+        Log.d(TAG, "startRunning called")
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
             startRunningSessionUseCase(ExerciseType.RUNNING)
                 .onSuccess { sessionId ->
+                    Log.d(TAG, "Session started successfully: $sessionId")
                     sessionStartTime = System.currentTimeMillis()
                     _state.update {
                         it.copy(
@@ -113,12 +120,25 @@ class RunningViewModel @Inject constructor(
                     startTimer()
                 }
                 .onFailure { error ->
+                    Log.e(TAG, "Failed to start session, starting simulation mode: ${error.message}")
+                    // Health Connect 없이도 시뮬레이션 모드로 실행
+                    val simulationSessionId = "simulation_${System.currentTimeMillis()}"
+                    sessionStartTime = System.currentTimeMillis()
                     _state.update {
                         it.copy(
+                            isRunning = true,
+                            sessionId = simulationSessionId,
                             isLoading = false,
-                            error = error.message ?: "Failed to start running session"
+                            elapsedTime = 0L,
+                            error = null
                         )
                     }
+
+                    // 메트릭 관찰 시작 (시뮬레이션 모드)
+                    startMetricsObservation()
+
+                    // 타이머 시작
+                    startTimer()
                 }
         }
     }
@@ -164,15 +184,19 @@ class RunningViewModel @Inject constructor(
      * 메트릭 관찰 시작
      */
     private fun startMetricsObservation() {
+        Log.d(TAG, "startMetricsObservation called")
         metricsJob?.cancel()
         metricsJob = viewModelScope.launch {
             observeRunningMetricsUseCase()
                 .catch { e ->
+                    Log.e(TAG, "Error observing metrics: ${e.message}", e)
                     _state.update {
                         it.copy(error = e.message ?: "Failed to observe metrics")
                     }
                 }
                 .collect { metrics ->
+                    Log.d(TAG, "Received metrics in ViewModel: distance=${metrics.distance}, heartRate=${metrics.heartRate}")
+
                     // 심박수
                     metrics.heartRate?.let { hr ->
                         heartRateList.add(hr)
@@ -190,6 +214,7 @@ class RunningViewModel @Inject constructor(
 
                     _state.update { state ->
                         state.copy(
+                            distance = metrics.distance ?: 0.0,
                             currentHeartRate = metrics.heartRate,
                             averageHeartRate = if (heartRateList.isNotEmpty()) {
                                 heartRateList.average().toInt()
@@ -204,6 +229,7 @@ class RunningViewModel @Inject constructor(
                             } else null
                         )
                     }
+                    Log.d(TAG, "State updated with new metrics")
                 }
         }
     }
