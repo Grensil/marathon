@@ -10,8 +10,10 @@ import android.os.Build
 import android.util.Log
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,11 +28,17 @@ class StepCounterSensor @Inject constructor(
     private val stepCounterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
     private val stepDetectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
 
+    @Volatile
     private var initialStepCount: Int? = null
+
+    @Volatile
+    private var currentTotalSteps: Int = 0
+
+    @Volatile
     private var sessionStartSteps: Int = 0
 
     companion object {
-        private const val TAG = "StepCounterSensor"
+        private const val TAG = "Logd"
     }
 
     /**
@@ -38,6 +46,7 @@ class StepCounterSensor @Inject constructor(
      */
     fun observeSteps(): Flow<Int> = callbackFlow {
         Log.d(TAG, "=== observeSteps called ===")
+        Log.d(TAG, "Android SDK: ${Build.VERSION.SDK_INT}")
         Log.d(TAG, "TYPE_STEP_COUNTER available: ${stepCounterSensor != null}")
         Log.d(TAG, "TYPE_STEP_DETECTOR available: ${stepDetectorSensor != null}")
 
@@ -47,12 +56,20 @@ class StepCounterSensor @Inject constructor(
                 context,
                 android.Manifest.permission.ACTIVITY_RECOGNITION
             )
-            Log.d(TAG, "ACTIVITY_RECOGNITION permission: ${permission == PackageManager.PERMISSION_GRANTED}")
+            Log.d(TAG, "ACTIVITY_RECOGNITION permission check: $permission")
+            Log.d(TAG, "ACTIVITY_RECOGNITION permission granted: ${permission == PackageManager.PERMISSION_GRANTED}")
             permission == PackageManager.PERMISSION_GRANTED
         } else {
-            Log.d(TAG, "Android version < 10, no runtime permission needed")
+            Log.d(TAG, "Android version < 10 (SDK ${Build.VERSION.SDK_INT}), no runtime permission needed")
             true
         }
+
+        // 위치 권한도 체크 (일부 기기에서 필요할 수 있음)
+        val fineLocationPermission = ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        )
+        Log.d(TAG, "ACCESS_FINE_LOCATION permission: ${fineLocationPermission == PackageManager.PERMISSION_GRANTED}")
 
         // 모든 센서 정보 출력
         val allSensors = sensorManager.getSensorList(Sensor.TYPE_ALL)
@@ -62,69 +79,112 @@ class StepCounterSensor @Inject constructor(
                 Log.d(TAG, "Step sensor found: ${sensor.name}, type=${sensor.type}, vendor=${sensor.vendor}")
             }
 
-        val listener = object : SensorEventListener {
+        val stepCounterListener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent?) {
                 event?.let {
-                    val totalSteps = it.values[0].toInt()
-                    Log.d(TAG, ">>> onSensorChanged CALLED! totalSteps=$totalSteps, sensor=${it.sensor.name}")
+                    currentTotalSteps = it.values[0].toInt()
+                    Log.d(TAG, ">>> STEP_COUNTER onSensorChanged! totalSteps=$currentTotalSteps")
 
-                    // 첫 측정 시 초기값 저장
-                    if (initialStepCount == null) {
-                        initialStepCount = totalSteps
-                        sessionStartSteps = 0
-                        Log.d(TAG, "Initial step count set: $totalSteps")
-                        // 초기값 설정 시에도 0을 전송
-                        trySend(sessionStartSteps).also { result ->
-                            Log.d(TAG, "Initial trySend result: $result")
-                        }
+                    // 첫 측정 시 초기값 저장 및 STEP_DETECTOR 카운트와 동기화
+                    val initCount = initialStepCount
+                    if (initCount == null) {
+                        initialStepCount = currentTotalSteps - sessionStartSteps
+                        Log.d(TAG, "Initial step count set: ${currentTotalSteps - sessionStartSteps} (currentTotal=$currentTotalSteps, detectorSteps=$sessionStartSteps)")
                     } else {
-                        // 세션 시작 이후 걸음 수 계산
-                        sessionStartSteps = totalSteps - (initialStepCount ?: 0)
-                        Log.d(TAG, "Session steps calculated: $sessionStartSteps (total=$totalSteps, initial=$initialStepCount)")
+                        // STEP_COUNTER 값으로 세션 걸음 수 업데이트
+                        sessionStartSteps = currentTotalSteps - initCount
+                        Log.d(TAG, "STEP_COUNTER sync: sessionSteps=$sessionStartSteps (total=$currentTotalSteps, initial=$initCount)")
                         trySend(sessionStartSteps).also { result ->
-                            Log.d(TAG, "trySend result: $result")
+                            Log.d(TAG, "STEP_COUNTER trySend: $result")
                         }
                     }
                 }
             }
 
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-                Log.d(TAG, "Sensor accuracy changed: sensor=${sensor?.name}, accuracy=$accuracy")
+                Log.d(TAG, "STEP_COUNTER accuracy: $accuracy")
+            }
+        }
+
+        // STEP_DETECTOR 리스너 (걸음마다 즉시 반응)
+        val stepDetectorListener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent?) {
+                // STEP_DETECTOR가 발화할 때마다 세션 걸음 수 1 증가
+                sessionStartSteps++
+                Log.d(TAG, ">>> STEP_DETECTOR fired! Incremented to: $sessionStartSteps")
+                trySend(sessionStartSteps).also { result ->
+                    Log.d(TAG, "STEP_DETECTOR trySend: $result")
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+                Log.d(TAG, "STEP_DETECTOR accuracy: $accuracy")
             }
         }
 
         // 센서 등록
         if (stepCounterSensor == null) {
-            Log.e(TAG, "Step counter sensor not available on this device!")
+            Log.d(TAG, "Step counter sensor not available on this device!")
             close(IllegalStateException("Step counter sensor not available"))
             return@callbackFlow
         }
 
         if (!hasPermission) {
-            Log.e(TAG, "ACTIVITY_RECOGNITION permission not granted!")
+            Log.d(TAG, "ACTIVITY_RECOGNITION permission not granted!")
             close(IllegalStateException("ACTIVITY_RECOGNITION permission not granted"))
             return@callbackFlow
         }
 
-        val registered = sensorManager.registerListener(
-            listener,
+        // 즉시 0 방출 (Flow가 시작되었음을 알림)
+        trySend(0).also { result ->
+            Log.d(TAG, "Initial 0 sent: $result")
+        }
+
+        // STEP_COUNTER 등록
+        val counterRegistered = sensorManager.registerListener(
+            stepCounterListener,
             stepCounterSensor,
-            SensorManager.SENSOR_DELAY_FASTEST
+            SensorManager.SENSOR_DELAY_UI
         )
+        Log.d(TAG, "STEP_COUNTER registered: $counterRegistered")
+        Log.d(TAG, "STEP_COUNTER info: ${stepCounterSensor.name}, vendor: ${stepCounterSensor.vendor}")
 
-        Log.d(TAG, "Sensor registration result: $registered")
+        // STEP_DETECTOR 등록 (더 빠른 반응)
+        val detectorRegistered = if (stepDetectorSensor != null) {
+            sensorManager.registerListener(
+                stepDetectorListener,
+                stepDetectorSensor,
+                SensorManager.SENSOR_DELAY_UI
+            ).also { registered ->
+                Log.d(TAG, "STEP_DETECTOR registered: $registered")
+                Log.d(TAG, "STEP_DETECTOR info: ${stepDetectorSensor.name}, vendor: ${stepDetectorSensor.vendor}")
+            }
+        } else {
+            Log.d(TAG, "STEP_DETECTOR not available")
+            false
+        }
 
-        if (!registered) {
-            Log.e(TAG, "Failed to register sensor listener!")
+        if (!counterRegistered && !detectorRegistered) {
+            Log.d(TAG, "Failed to register any sensor listener!")
             close(IllegalStateException("Failed to register sensor listener"))
         } else {
-            Log.d(TAG, "Sensor listener successfully registered. Waiting for sensor events...")
-            Log.d(TAG, "NOTE: TYPE_STEP_COUNTER only fires when you actually walk/move!")
+            Log.d(TAG, "Sensor listener(s) registered successfully!")
+            Log.d(TAG, "Counter: $counterRegistered, Detector: $detectorRegistered")
+        }
+
+        // 주기적으로 현재 걸음 수 방출 (센서가 느릴 때를 대비)
+        launch {
+            while (true) {
+                delay(2000) // 2초마다
+                Log.d(TAG, "Periodic update: session steps = $sessionStartSteps")
+                trySend(sessionStartSteps)
+            }
         }
 
         awaitClose {
-            Log.d(TAG, "=== Unregistering sensor listener ===")
-            sensorManager.unregisterListener(listener)
+            Log.d(TAG, "=== Unregistering sensor listeners ===")
+            sensorManager.unregisterListener(stepCounterListener)
+            sensorManager.unregisterListener(stepDetectorListener)
         }
     }
 

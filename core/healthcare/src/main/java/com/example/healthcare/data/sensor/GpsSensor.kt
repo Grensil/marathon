@@ -37,7 +37,7 @@ class GpsSensor @Inject constructor(
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
     companion object {
-        private const val TAG = "GpsSensor"
+        private const val TAG = "Logd"
         private const val MIN_TIME_BETWEEN_UPDATES = 1000L // 1초
         private const val MIN_DISTANCE_CHANGE = 0f // 0미터 (모든 업데이트 받기)
     }
@@ -76,13 +76,13 @@ class GpsSensor @Inject constructor(
         Log.d(TAG, "Has permission: ${hasLocationPermission()}")
 
         if (!hasLocationPermission()) {
-            Log.e(TAG, "Location permission not granted!")
+            Log.d(TAG, "Location permission not granted!")
             close(IllegalStateException("Location permission not granted"))
             return@callbackFlow
         }
 
         if (!isGpsEnabled()) {
-            Log.w(TAG, "GPS is disabled!")
+            Log.d(TAG, "GPS is disabled!")
             close(IllegalStateException("GPS is disabled"))
             return@callbackFlow
         }
@@ -115,11 +115,16 @@ class GpsSensor @Inject constructor(
             }
 
             override fun onProviderDisabled(provider: String) {
-                Log.e(TAG, "GPS provider disabled: $provider")
+                Log.d(TAG, "GPS provider disabled: $provider")
             }
         }
 
         try {
+            // 즉시 더미 데이터 방출 (Flow가 시작되었음을 알림)
+            trySend(GpsData(0.0, 0.0, null, null, 0f, 0L)).also { result ->
+                Log.d(TAG, "Initial dummy GPS data sent: $result")
+            }
+
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
                 MIN_TIME_BETWEEN_UPDATES,
@@ -141,10 +146,10 @@ class GpsSensor @Inject constructor(
                 ))
             }
         } catch (e: SecurityException) {
-            Log.e(TAG, "Security exception when requesting location updates", e)
+            Log.d(TAG, "Security exception when requesting location updates: ${e.message}")
             close(e)
         } catch (e: Exception) {
-            Log.e(TAG, "Exception when requesting location updates", e)
+            Log.d(TAG, "Exception when requesting location updates: ${e.message}")
             close(e)
         }
 

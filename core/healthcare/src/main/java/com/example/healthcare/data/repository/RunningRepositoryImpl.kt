@@ -9,6 +9,7 @@ import com.example.healthcare.domain.model.RunningMetrics
 import com.example.healthcare.domain.model.RunningSession
 import com.example.healthcare.domain.repository.RunningRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapNotNull
 import java.time.Instant
@@ -35,7 +36,7 @@ class RunningRepositoryImpl @Inject constructor(
     private var lastLongitude: Double? = null
 
     companion object {
-        private const val TAG = "RunningRepositoryImpl"
+        private const val TAG = "Logd"
     }
 
     override suspend fun startExerciseSession(exerciseType: ExerciseType): Result<String> {
@@ -72,13 +73,20 @@ class RunningRepositoryImpl @Inject constructor(
 
     override fun observeRunningMetrics(): Flow<RunningMetrics> =
         combine(
-            stepCounterSensor.observeSteps(),
-            gpsSensor.observeLocation()
+            stepCounterSensor.observeSteps().catch { e ->
+                Log.d(TAG, "StepCounterSensor error: ${e.message}")
+                emit(0) // 에러 발생 시 0 방출
+            },
+            gpsSensor.observeLocation().catch { e ->
+                Log.d(TAG, "GpsSensor error: ${e.message}")
+                // GPS 에러 시 더미 데이터 방출
+                emit(com.example.healthcare.data.sensor.GpsData(0.0, 0.0, null, null, 0f, 0L))
+            }
         ) { steps, gpsData ->
-            Log.d(TAG, "Combining: steps=$steps, gps=(${gpsData.latitude}, ${gpsData.longitude})")
+            Log.d(TAG, ">>> Combining: steps=$steps, gps=(${gpsData.latitude}, ${gpsData.longitude})")
 
             if (currentSessionId == null) {
-                Log.w(TAG, "currentSessionId is null, skipping metrics emission")
+                Log.d(TAG, "currentSessionId is null, skipping metrics emission")
                 return@combine null
             }
 
@@ -88,22 +96,41 @@ class RunningRepositoryImpl @Inject constructor(
             val elapsedSeconds = java.time.Duration.between(startTime, currentTime).seconds
             Log.d(TAG, "Calculating metrics: startTime=$startTime, elapsed=$elapsedSeconds seconds")
 
-            // GPS 기반 거리 누적 계산
-            if (lastLatitude != null && lastLongitude != null) {
-                val distanceIncrement = gpsSensor.calculateDistance(
-                    lastLatitude!!, lastLongitude!!,
-                    gpsData.latitude, gpsData.longitude
-                )
-                totalDistance += distanceIncrement
-                Log.d(TAG, "Distance increment: $distanceIncrement m, total: $totalDistance m")
-            }
-            lastLatitude = gpsData.latitude
-            lastLongitude = gpsData.longitude
+            // GPS 기반 거리 누적 계산 (GPS 데이터가 유효한 경우만)
+            val hasValidGps = gpsData.latitude != 0.0 && gpsData.longitude != 0.0
 
-            // GPS 속도 사용 (m/s), 없으면 거리 기반 계산
-            val speed = gpsData.speed?.toDouble() ?: if (elapsedSeconds > 0) {
+            if (hasValidGps) {
+                if (lastLatitude != null && lastLongitude != null) {
+                    val distanceIncrement = gpsSensor.calculateDistance(
+                        lastLatitude!!, lastLongitude!!,
+                        gpsData.latitude, gpsData.longitude
+                    )
+                    // 비정상적으로 큰 이동 필터링 (100m 이상은 무시)
+                    if (distanceIncrement < 100) {
+                        totalDistance += distanceIncrement
+                        Log.d(TAG, "GPS distance increment: $distanceIncrement m, total: $totalDistance m")
+                    } else {
+                        Log.d(TAG, "Ignoring abnormal distance jump: $distanceIncrement m")
+                    }
+                }
+                lastLatitude = gpsData.latitude
+                lastLongitude = gpsData.longitude
+            } else {
+                // GPS 없으면 걸음 수 기반 거리 계산 (평균 보폭 0.75m)
+                totalDistance = totalSteps * 0.75
+                Log.d(TAG, "Step-based distance: $totalDistance m (steps: $totalSteps)")
+            }
+
+            // GPS 속도 우선, 없으면 거리/시간 기반 계산
+            val speed = if (hasValidGps && gpsData.speed != null && gpsData.speed > 0) {
+                gpsData.speed.toDouble()
+            } else if (elapsedSeconds > 0 && totalDistance > 0) {
                 totalDistance / elapsedSeconds
-            } else 0.0
+            } else {
+                0.0
+            }
+
+            Log.d(TAG, "Speed: $speed m/s (GPS: $hasValidGps, elapsed: $elapsedSeconds s)")
 
             // 페이스 계산 (min/km)
             val pace = if (speed > 0) {
@@ -116,10 +143,12 @@ class RunningRepositoryImpl @Inject constructor(
             previousSteps = totalSteps
 
             // 케이던스 계산 (단위: steps per minute)
-            val cadence = if (stepsInLastUpdate > 0 && elapsedSeconds > 0) {
-                // 최근 업데이트 간격 동안의 걸음 수를 분당으로 변환 (대략 1초 간격 가정)
-                stepsInLastUpdate * 60.0
+            // 전체 평균 케이던스 계산
+            val cadence = if (totalSteps > 0 && elapsedSeconds > 0) {
+                (totalSteps.toDouble() / elapsedSeconds) * 60.0
             } else null
+
+            Log.d(TAG, "Steps: $totalSteps, cadence: $cadence spm")
 
             // 심박수 시뮬레이션 (속도 기반)
             val heartRate = when {

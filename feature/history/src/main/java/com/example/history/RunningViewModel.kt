@@ -46,7 +46,7 @@ class RunningViewModel @Inject constructor(
     private val cadenceList = mutableListOf<Double>()
 
     companion object {
-        private const val TAG = "RunningViewModel"
+        private const val TAG = "Logd"
     }
 
     init {
@@ -121,7 +121,7 @@ class RunningViewModel @Inject constructor(
                 // 타이머 시작
                 startTimer()
             }.onFailure { error ->
-                Log.e(TAG, "This should not happen! Failed to start session: ${error.message}", error)
+                Log.d(TAG, "Failed to start session: ${error.message}")
                 _state.update {
                     it.copy(
                         isLoading = false,
@@ -178,7 +178,7 @@ class RunningViewModel @Inject constructor(
         metricsJob = viewModelScope.launch {
             observeRunningMetricsUseCase()
                 .catch { e ->
-                    Log.e(TAG, "Error observing metrics: ${e.message}", e)
+                    Log.d(TAG, "Error observing metrics: ${e.message}")
                     _state.update {
                         it.copy(error = e.message ?: "Failed to observe metrics")
                     }
