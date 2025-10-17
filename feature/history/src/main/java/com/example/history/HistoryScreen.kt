@@ -119,6 +119,25 @@ fun HistoryScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // 고도
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    MetricCard(
+                        title = "Altitude",
+                        value = state.currentAltitude?.let { String.format("%.0f", it) } ?: "--",
+                        unit = "m"
+                    )
+                    MetricCard(
+                        title = "Steps",
+                        value = "--",
+                        unit = "steps"
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 // 칼로리
                 Card(
                     modifier = Modifier

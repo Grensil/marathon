@@ -2,17 +2,16 @@ package com.example.healthcare.data.repository
 
 import android.util.Log
 import com.example.healthcare.data.datasource.HealthConnectDataSource
+import com.example.healthcare.data.sensor.GpsSensor
 import com.example.healthcare.data.sensor.StepCounterSensor
 import com.example.healthcare.domain.model.ExerciseType
 import com.example.healthcare.domain.model.RunningMetrics
 import com.example.healthcare.domain.model.RunningSession
 import com.example.healthcare.domain.repository.RunningRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.mapNotNull
 import java.time.Instant
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.max
@@ -23,14 +22,17 @@ import kotlin.math.max
 @Singleton
 class RunningRepositoryImpl @Inject constructor(
     private val healthConnectDataSource: HealthConnectDataSource,
-    private val stepCounterSensor: StepCounterSensor
+    private val stepCounterSensor: StepCounterSensor,
+    private val gpsSensor: GpsSensor
 ) : RunningRepository {
 
     private var currentSessionId: String? = null
     private var sessionStartTime: Instant? = null
     private var totalSteps: Int = 0
     private var previousSteps: Int = 0
-    private var sessionStartStepCount: Int = 0
+    private var totalDistance: Double = 0.0 // GPS 기반 누적 거리 (미터)
+    private var lastLatitude: Double? = null
+    private var lastLongitude: Double? = null
 
     companion object {
         private const val TAG = "RunningRepositoryImpl"
@@ -41,87 +43,66 @@ class RunningRepositoryImpl @Inject constructor(
         sessionStartTime = startTime
         Log.d(TAG, "startExerciseSession called, sessionStartTime=$sessionStartTime")
 
-        // Health Connect를 건너뛰고 바로 폰 센서 기반 시뮬레이션 모드로 시작
-        val simulationSessionId = "simulation_${System.currentTimeMillis()}"
-        currentSessionId = simulationSessionId
+        // 세션 초기화
+        val sessionId = "session_${System.currentTimeMillis()}"
+        currentSessionId = sessionId
         totalSteps = 0
         previousSteps = 0
-        Log.d(TAG, "Phone sensor session started: $simulationSessionId")
-        return Result.success(simulationSessionId)
+        totalDistance = 0.0
+        lastLatitude = null
+        lastLongitude = null
 
-        /* Health Connect를 사용하려면 아래 코드 주석 해제
-        return healthConnectDataSource.startExerciseSession(exerciseType, startTime)
-            .onSuccess { sessionId ->
-                currentSessionId = sessionId
-                totalSteps = 0
-                previousSteps = 0
-                Log.d(TAG, "Health Connect session started: $sessionId")
-            }
-            .onFailure { error ->
-                // Health Connect 실패 시 시뮬레이션 모드로 세션 생성
-                val simulationSessionId = "simulation_${System.currentTimeMillis()}"
-                currentSessionId = simulationSessionId
-                totalSteps = 0
-                previousSteps = 0
-                Log.d(TAG, "Simulation session started: $simulationSessionId (Health Connect failed: ${error.message})")
-                return Result.success(simulationSessionId)
-            }
-        */
+        Log.d(TAG, "Phone sensor session started: $sessionId")
+        return Result.success(sessionId)
     }
 
     override suspend fun stopExerciseSession(sessionId: String): Result<Unit> {
-        // 시뮬레이션 세션인 경우
-        if (sessionId.startsWith("simulation_")) {
-            currentSessionId = null
-            sessionStartTime = null
-            totalSteps = 0
-            previousSteps = 0
-            stepCounterSensor.resetSession()
-            return Result.success(Unit)
-        }
+        currentSessionId = null
+        sessionStartTime = null
+        totalSteps = 0
+        previousSteps = 0
+        totalDistance = 0.0
+        lastLatitude = null
+        lastLongitude = null
+        stepCounterSensor.resetSession()
 
-        // Health Connect 세션인 경우
-        val endTime = Instant.now()
-        return healthConnectDataSource.stopExerciseSession(sessionId, endTime)
-            .onSuccess {
-                currentSessionId = null
-                sessionStartTime = null
-                totalSteps = 0
-                previousSteps = 0
-                stepCounterSensor.resetSession()
-            }
+        Log.d(TAG, "Exercise session stopped: $sessionId")
+        return Result.success(Unit)
     }
 
-    override fun observeRunningMetrics(): Flow<RunningMetrics> = flow {
-        stepCounterSensor.resetSession()
-        Log.d(TAG, "observeRunningMetrics started, currentSessionId=$currentSessionId")
-
-        // 걸음 센서와 타이머를 결합
-        stepCounterSensor.observeSteps().collect { steps ->
-            Log.d(TAG, "Received steps from sensor: $steps, currentSessionId=$currentSessionId")
+    override fun observeRunningMetrics(): Flow<RunningMetrics> =
+        combine(
+            stepCounterSensor.observeSteps(),
+            gpsSensor.observeLocation()
+        ) { steps, gpsData ->
+            Log.d(TAG, "Combining: steps=$steps, gps=(${gpsData.latitude}, ${gpsData.longitude})")
 
             if (currentSessionId == null) {
                 Log.w(TAG, "currentSessionId is null, skipping metrics emission")
-                return@collect
+                return@combine null
             }
 
-            // startTime을 여기서 참조 (Flow 생성 시점이 아님)
+            // 경과 시간 계산
             val startTime = sessionStartTime ?: Instant.now()
             val currentTime = Instant.now()
             val elapsedSeconds = java.time.Duration.between(startTime, currentTime).seconds
             Log.d(TAG, "Calculating metrics: startTime=$startTime, elapsed=$elapsedSeconds seconds")
 
-            // 걸음 수 기반 계산
-            totalSteps = steps
-            val stepsInLast2Seconds = max(0, totalSteps - previousSteps)
-            previousSteps = totalSteps
+            // GPS 기반 거리 누적 계산
+            if (lastLatitude != null && lastLongitude != null) {
+                val distanceIncrement = gpsSensor.calculateDistance(
+                    lastLatitude!!, lastLongitude!!,
+                    gpsData.latitude, gpsData.longitude
+                )
+                totalDistance += distanceIncrement
+                Log.d(TAG, "Distance increment: $distanceIncrement m, total: $totalDistance m")
+            }
+            lastLatitude = gpsData.latitude
+            lastLongitude = gpsData.longitude
 
-            // 거리 계산 (평균 보폭 0.75m 가정)
-            val distance = totalSteps * 0.75 // 미터
-
-            // 속도 계산 (m/s)
-            val speed = if (elapsedSeconds > 0) {
-                distance / elapsedSeconds
+            // GPS 속도 사용 (m/s), 없으면 거리 기반 계산
+            val speed = gpsData.speed?.toDouble() ?: if (elapsedSeconds > 0) {
+                totalDistance / elapsedSeconds
             } else 0.0
 
             // 페이스 계산 (min/km)
@@ -129,33 +110,39 @@ class RunningRepositoryImpl @Inject constructor(
                 RunningMetrics.speedToPace(speed)
             } else null
 
-            // 케이던스 계산 (최근 2초간 걸음 수를 분당으로 변환)
-            val cadence = if (stepsInLast2Seconds > 0) {
-                (stepsInLast2Seconds / 2.0) * 60.0
+            // 걸음 수 기반 케이던스 계산
+            totalSteps = steps
+            val stepsInLastUpdate = max(0, totalSteps - previousSteps)
+            previousSteps = totalSteps
+
+            // 케이던스 계산 (단위: steps per minute)
+            val cadence = if (stepsInLastUpdate > 0 && elapsedSeconds > 0) {
+                // 최근 업데이트 간격 동안의 걸음 수를 분당으로 변환 (대략 1초 간격 가정)
+                stepsInLastUpdate * 60.0
             } else null
 
-            // 심박수 시뮬레이션 (속도 기반으로 계산)
-            // 느리게 걸을 때: 90-120, 빠르게 달릴 때: 150-180
+            // 심박수 시뮬레이션 (속도 기반)
             val heartRate = when {
-                speed < 1.0 -> (90..120).random() // 천천히 걷기
-                speed < 2.0 -> (110..140).random() // 빠르게 걷기
-                speed < 3.0 -> (130..160).random() // 조깅
-                else -> (150..180).random() // 달리기
+                speed < 1.0 -> (90..120).random()
+                speed < 2.0 -> (110..140).random()
+                speed < 3.0 -> (130..160).random()
+                else -> (150..180).random()
             }
 
-            val metrics = RunningMetrics(
+            RunningMetrics(
                 timestamp = currentTime.toEpochMilli(),
                 heartRate = heartRate,
                 speed = speed,
-                distance = distance,
+                distance = totalDistance,
                 cadence = cadence,
-                pace = pace
-            )
-
-            Log.d(TAG, "Emitting metrics: steps=$totalSteps, distance=$distance, heartRate=$heartRate")
-            emit(metrics)
-        }
-    }
+                pace = pace,
+                altitude = gpsData.altitude,
+                elapsedTimeSeconds = elapsedSeconds
+            ).also {
+                Log.d(TAG, "Metrics: distance=${it.distance}m, speed=${it.speed}m/s, " +
+                        "pace=${it.pace}, cadence=${it.cadence}, altitude=${it.altitude}")
+            }
+        }.mapNotNull { it }
 
     override suspend fun getActiveSession(): Result<RunningSession?> {
         return try {
@@ -183,8 +170,6 @@ class RunningRepositoryImpl @Inject constructor(
 
     override suspend fun requestPermissions(): Result<Unit> {
         return try {
-            // 권한 요청은 Activity에서 처리해야 하므로
-            // 이 메서드는 필요한 권한 목록만 반환합니다
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

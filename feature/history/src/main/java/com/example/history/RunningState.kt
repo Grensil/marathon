@@ -14,6 +14,7 @@ data class RunningState(
     val averageHeartRate: Int? = null,
     val currentCadence: Int? = null,
     val averageCadence: Int? = null,
+    val currentAltitude: Double? = null, // meters
     val calories: Int = 0,
     val hasPermissions: Boolean = false,
     val isLoading: Boolean = false,

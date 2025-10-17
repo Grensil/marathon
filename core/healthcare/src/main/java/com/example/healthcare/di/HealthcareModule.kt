@@ -2,6 +2,7 @@ package com.example.healthcare.di
 
 import android.content.Context
 import com.example.healthcare.data.repository.RunningRepositoryImpl
+import com.example.healthcare.data.sensor.GpsSensor
 import com.example.healthcare.data.sensor.StepCounterSensor
 import com.example.healthcare.domain.repository.RunningRepository
 import dagger.Binds
@@ -32,6 +33,14 @@ abstract class HealthcareModule {
             @ApplicationContext context: Context
         ): StepCounterSensor {
             return StepCounterSensor(context)
+        }
+
+        @Provides
+        @Singleton
+        fun provideGpsSensor(
+            @ApplicationContext context: Context
+        ): GpsSensor {
+            return GpsSensor(context)
         }
     }
 }

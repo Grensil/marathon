@@ -9,7 +9,9 @@ data class RunningMetrics(
     val speed: Double? = null, // m/s
     val distance: Double? = null, // meters
     val cadence: Double? = null, // steps per minute
-    val pace: Double? = null // min/km
+    val pace: Double? = null, // min/km
+    val altitude: Double? = null, // meters
+    val elapsedTimeSeconds: Long = 0 // 경과 시간 (초)
 ) {
     companion object {
         /**

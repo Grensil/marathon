@@ -215,7 +215,8 @@ class RunningViewModel @Inject constructor(
                             currentCadence = metrics.cadence?.toInt(),
                             averageCadence = if (cadenceList.isNotEmpty()) {
                                 cadenceList.average().toInt()
-                            } else null
+                            } else null,
+                            currentAltitude = metrics.altitude
                         )
                     }
                     Log.d(TAG, "State updated with new metrics")
