@@ -151,17 +151,12 @@ fun HistoryScreen(
                 // 고도
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    horizontalArrangement = Arrangement.Center
                 ) {
                     MetricCard(
                         title = "Altitude",
                         value = state.currentAltitude?.let { String.format("%.0f", it) } ?: "--",
                         unit = "m"
-                    )
-                    MetricCard(
-                        title = "Steps",
-                        value = "--",
-                        unit = "steps"
                     )
                 }
 
@@ -196,40 +191,88 @@ fun HistoryScreen(
                     }
                 }
 
+
+
+            Spacer(modifier = Modifier.height(16.dp))
+
                 Spacer(modifier = Modifier.weight(1f))
 
-                // 시작/종료 버튼
-                Button(
-                    onClick = {
-                        if (state.isRunning) {
-                            viewModel.stopRunning()
-                        } else {
-                            viewModel.startRunning()
-                        }
-                    },
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (state.isRunning) {
-                            Color.Red
-                        } else {
-                            MaterialTheme.colorScheme.primary
-                        }
-                    ),
-                    enabled = !state.isLoading
+                // 버튼 영역
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = Color.White
-                        )
+                    if (!state.isRunning || state.isPaused) {
+                        // START 또는 RESUME 버튼
+                        Button(
+                            onClick = {
+                                if (state.isPaused) {
+                                    viewModel.resumeRunning()
+                                } else {
+                                    viewModel.startRunning()
+                                }
+                            },
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(CircleShape),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                            enabled = !state.isLoading
+                        ) {
+                            if (state.isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = Color.White
+                                )
+                            } else {
+                                Text(
+                                    text = if (state.isPaused) "RESUME" else "START",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        // PAUSE 상태일 때만 STOP 버튼 표시
+                        if (state.isPaused) {
+                            Spacer(modifier = Modifier.width(24.dp))
+                            Button(
+                                onClick = { viewModel.stopRunning() },
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .clip(CircleShape),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Red
+                                ),
+                                enabled = !state.isLoading
+                            ) {
+                                Text(
+                                    text = "STOP",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     } else {
-                        Text(
-                            text = if (state.isRunning) "STOP" else "START",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        // PAUSE 버튼 (러닝 중일 때)
+                        Button(
+                            onClick = { viewModel.pauseRunning() },
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(CircleShape),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFFA500) // Orange
+                            ),
+                            enabled = !state.isLoading
+                        ) {
+                            Text(
+                                text = "PAUSE",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
 
@@ -244,7 +287,94 @@ fun HistoryScreen(
                     )
                 }
             }
+
+        // 완료 다이얼로그
+        state.completedRecord?.let { record ->
+            if (state.showCompletionDialog) {
+                CompletionDialog(
+                    record = record,
+                    onDismiss = { viewModel.dismissCompletionDialog() },
+                    formatElapsedTime = viewModel::formatElapsedTime,
+                    formatDistance = viewModel::formatDistance
+                )
+            }
+        }
     }
+}
+
+@Composable
+private fun CompletionDialog(
+    record: RunningRecord,
+    onDismiss: () -> Unit,
+    formatElapsedTime: (Long) -> String,
+    formatDistance: (Double) -> String
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Running Completed!",
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 시간
+                Text(
+                    text = formatElapsedTime(record.elapsedTime),
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // 거리
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Distance:", fontWeight = FontWeight.Medium)
+                    Text("${formatDistance(record.distance)} km", fontWeight = FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 평균 페이스
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Avg Pace:", fontWeight = FontWeight.Medium)
+                    Text("${record.averagePace} min/km", fontWeight = FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 케이던스
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Cadence:", fontWeight = FontWeight.Medium)
+                    Text(
+                        text = record.averageCadence?.let { "$it spm" } ?: "--",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("OK")
+            }
+        }
+    )
 }
 
 @Composable

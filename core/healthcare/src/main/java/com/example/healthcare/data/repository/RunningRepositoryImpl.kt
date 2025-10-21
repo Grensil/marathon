@@ -34,6 +34,8 @@ class RunningRepositoryImpl @Inject constructor(
     private var totalDistance: Double = 0.0 // GPS 기반 누적 거리 (미터)
     private var lastLatitude: Double? = null
     private var lastLongitude: Double? = null
+    private var lastCadenceUpdateTime: Long = 0L
+    private var stepsAtLastCadenceUpdate: Int = 0
 
     companion object {
         private const val TAG = "Logd"
@@ -52,6 +54,8 @@ class RunningRepositoryImpl @Inject constructor(
         totalDistance = 0.0
         lastLatitude = null
         lastLongitude = null
+        lastCadenceUpdateTime = 0L
+        stepsAtLastCadenceUpdate = 0
 
         Log.d(TAG, "Phone sensor session started: $sessionId")
         return Result.success(sessionId)
@@ -65,6 +69,8 @@ class RunningRepositoryImpl @Inject constructor(
         totalDistance = 0.0
         lastLatitude = null
         lastLongitude = null
+        lastCadenceUpdateTime = 0L
+        stepsAtLastCadenceUpdate = 0
         stepCounterSensor.resetSession()
 
         Log.d(TAG, "Exercise session stopped: $sessionId")
@@ -139,24 +145,19 @@ class RunningRepositoryImpl @Inject constructor(
 
             // 걸음 수 기반 케이던스 계산
             totalSteps = steps
-            val stepsInLastUpdate = max(0, totalSteps - previousSteps)
-            previousSteps = totalSteps
 
             // 케이던스 계산 (단위: steps per minute)
-            // 전체 평균 케이던스 계산
+            // 전체 세션 평균 케이던스
             val cadence = if (totalSteps > 0 && elapsedSeconds > 0) {
-                (totalSteps.toDouble() / elapsedSeconds) * 60.0
+                val avgCadence = (totalSteps.toDouble() / elapsedSeconds) * 60.0
+                Log.d(TAG, "Cadence: $totalSteps steps in $elapsedSeconds s = $avgCadence spm")
+                avgCadence
             } else null
 
             Log.d(TAG, "Steps: $totalSteps, cadence: $cadence spm")
 
-            // 심박수 시뮬레이션 (속도 기반)
-            val heartRate = when {
-                speed < 1.0 -> (90..120).random()
-                speed < 2.0 -> (110..140).random()
-                speed < 3.0 -> (130..160).random()
-                else -> (150..180).random()
-            }
+            // 심박수는 실제 데이터가 없으므로 null
+            val heartRate: Int? = null
 
             RunningMetrics(
                 timestamp = currentTime.toEpochMilli(),

@@ -39,11 +39,15 @@ class RunningViewModel @Inject constructor(
     private var metricsJob: Job? = null
     private var timerJob: Job? = null
     private var sessionStartTime: Long = 0L
+    private var pausedTime: Long = 0L // 일시정지된 총 시간
 
     // 실시간 메트릭 누적용
     private val heartRateList = mutableListOf<Int>()
     private val paceList = mutableListOf<Double>()
     private val cadenceList = mutableListOf<Double>()
+
+    // 기록 리스트
+    private val recordsList = mutableListOf<RunningRecord>()
 
     companion object {
         private const val TAG = "Logd"
@@ -133,11 +137,40 @@ class RunningViewModel @Inject constructor(
     }
 
     /**
-     * 러닝 중지
+     * 러닝 일시정지
+     */
+    fun pauseRunning() {
+        Log.d(TAG, "pauseRunning called")
+        metricsJob?.cancel()
+        timerJob?.cancel()
+
+        _state.update { it.copy(isPaused = true) }
+        Log.d(TAG, "Running paused")
+    }
+
+    /**
+     * 러닝 재개
+     */
+    fun resumeRunning() {
+        Log.d(TAG, "resumeRunning called")
+        _state.update { it.copy(isPaused = false) }
+
+        // 메트릭 관찰 재시작
+        startMetricsObservation()
+
+        // 타이머 재시작
+        startTimer()
+
+        Log.d(TAG, "Running resumed")
+    }
+
+    /**
+     * 러닝 완전 중지 (기록 저장)
      */
     fun stopRunning() {
         viewModelScope.launch {
             val sessionId = _state.value.sessionId ?: return@launch
+            val currentState = _state.value
 
             _state.update { it.copy(isLoading = true) }
 
@@ -145,6 +178,20 @@ class RunningViewModel @Inject constructor(
                 .onSuccess {
                     metricsJob?.cancel()
                     timerJob?.cancel()
+
+                    // 기록 생성
+                    val record = RunningRecord(
+                        timestamp = System.currentTimeMillis(),
+                        elapsedTime = currentState.elapsedTime,
+                        distance = currentState.distance,
+                        averagePace = currentState.averagePace,
+                        averageCadence = currentState.averageCadence
+                    )
+
+                    // 리스트에 추가
+                    recordsList.add(record)
+                    Log.d(TAG, "Record saved: $record")
+                    Log.d(TAG, "Total records: ${recordsList.size}")
 
                     // 리스트 초기화
                     heartRateList.clear()
@@ -154,7 +201,10 @@ class RunningViewModel @Inject constructor(
                     _state.update {
                         RunningState(
                             hasPermissions = it.hasPermissions,
-                            isLoading = false
+                            isLoading = false,
+                            showCompletionDialog = true,
+                            completedRecord = record,
+                            records = recordsList.toList()
                         )
                     }
                 }
@@ -167,6 +217,13 @@ class RunningViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    /**
+     * 완료 다이얼로그 닫기
+     */
+    fun dismissCompletionDialog() {
+        _state.update { it.copy(showCompletionDialog = false, completedRecord = null) }
     }
 
     /**
@@ -201,25 +258,39 @@ class RunningViewModel @Inject constructor(
                         cadenceList.add(c)
                     }
 
+                    // 페이스 리스트 관리 (평균 계산용)
+                    metrics.pace?.let { p ->
+                        paceList.add(p)
+                    }
+
+                    // Current Pace: Repository의 pace (속도 기반 즉시 계산)
+                    val currentPace = metrics.pace?.let { formatPace(it) } ?: "--:--"
+
+                    // Average Pace: 누적된 페이스들의 평균
+                    val avgPace = if (paceList.isNotEmpty()) {
+                        formatPace(paceList.average())
+                    } else "--:--"
+
+                    // Cadence: Repository가 이미 평균을 계산함
+                    val avgCadence = metrics.cadence?.toInt()
+
+                    Log.d(TAG, "Current pace: ${metrics.pace}, cadence: ${metrics.cadence}")
+                    Log.d(TAG, "paceList size: ${paceList.size}, avgPace: $avgPace")
+                    Log.d(TAG, "Formatted - currentPace: $currentPace, avgPace: $avgPace")
+
                     _state.update { state ->
                         state.copy(
                             distance = metrics.distance ?: 0.0,
                             currentHeartRate = metrics.heartRate,
-                            averageHeartRate = if (heartRateList.isNotEmpty()) {
-                                heartRateList.average().toInt()
-                            } else null,
-                            currentPace = metrics.pace?.let { formatPace(it) } ?: "--:--",
-                            averagePace = if (paceList.isNotEmpty()) {
-                                formatPace(paceList.average())
-                            } else "--:--",
+                            averageHeartRate = metrics.heartRate,
+                            currentPace = currentPace,
+                            averagePace = avgPace,
                             currentCadence = metrics.cadence?.toInt(),
-                            averageCadence = if (cadenceList.isNotEmpty()) {
-                                cadenceList.average().toInt()
-                            } else null,
+                            averageCadence = avgCadence,
                             currentAltitude = metrics.altitude
                         )
                     }
-                    Log.d(TAG, "State updated with new metrics")
+                    Log.d(TAG, "State updated: currentPace=${_state.value.currentPace}, avgPace=${_state.value.averagePace}, cadence=${_state.value.currentCadence}")
                 }
         }
     }
