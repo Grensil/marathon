@@ -8,7 +8,7 @@ import com.example.healthcare.data.local.entity.RunningSessionEntity
 
 @Database(
     entities = [RunningSessionEntity::class, LocationPointEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class MarathonDatabase : RoomDatabase() {
