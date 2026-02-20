@@ -18,18 +18,23 @@ import com.example.marathon.R
 
 class RunningService : Service() {
 
+    private var ttsManager: RunningTtsManager? = null
+
     companion object {
         const val CHANNEL_ID = "marathon_running_channel"
         const val NOTIFICATION_ID = 1001
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
         const val ACTION_UPDATE = "ACTION_UPDATE"
+        const val ACTION_PAUSE = "ACTION_PAUSE"
+        const val ACTION_RESUME = "ACTION_RESUME"
+        const val ACTION_TTS_KILOMETER = "ACTION_TTS_KILOMETER"
         const val EXTRA_DISTANCE = "extra_distance"
         const val EXTRA_TIME = "extra_time"
         const val EXTRA_PACE = "extra_pace"
+        const val EXTRA_KM = "extra_km"
 
         fun startService(context: Context) {
-            // Android 13+ 알림 권한 체크
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -46,9 +51,25 @@ class RunningService : Service() {
             }
         }
 
-        fun stopService(context: Context) {
+        fun stopService(context: Context, distanceKm: String = "", elapsedTime: String = "") {
             val intent = Intent(context, RunningService::class.java).apply {
                 action = ACTION_STOP
+                putExtra(EXTRA_DISTANCE, distanceKm)
+                putExtra(EXTRA_TIME, elapsedTime)
+            }
+            context.startService(intent)
+        }
+
+        fun pauseService(context: Context) {
+            val intent = Intent(context, RunningService::class.java).apply {
+                action = ACTION_PAUSE
+            }
+            context.startService(intent)
+        }
+
+        fun resumeService(context: Context) {
+            val intent = Intent(context, RunningService::class.java).apply {
+                action = ACTION_RESUME
             }
             context.startService(intent)
         }
@@ -62,6 +83,16 @@ class RunningService : Service() {
             }
             context.startService(intent)
         }
+
+        fun announceKilometer(context: Context, km: Int, pace: String, elapsedTime: String) {
+            val intent = Intent(context, RunningService::class.java).apply {
+                action = ACTION_TTS_KILOMETER
+                putExtra(EXTRA_KM, km)
+                putExtra(EXTRA_PACE, pace)
+                putExtra(EXTRA_TIME, elapsedTime)
+            }
+            context.startService(intent)
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -69,16 +100,34 @@ class RunningService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        ttsManager = RunningTtsManager(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
                 startForeground(NOTIFICATION_ID, createNotification("0.00 km", "00:00", "--:--"))
+                ttsManager?.announceRunStart()
             }
             ACTION_STOP -> {
-                stopForeground(STOP_FOREGROUND_REMOVE)
-                stopSelf()
+                val distanceKm = intent.getStringExtra(EXTRA_DISTANCE) ?: ""
+                val elapsedTime = intent.getStringExtra(EXTRA_TIME) ?: ""
+                if (distanceKm.isNotEmpty() && elapsedTime.isNotEmpty()) {
+                    ttsManager?.announceRunComplete(distanceKm, elapsedTime)
+                }
+                // Delay stop slightly to allow TTS to finish
+                android.os.Handler(mainLooper).postDelayed({
+                    ttsManager?.shutdown()
+                    ttsManager = null
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }, 3000)
+            }
+            ACTION_PAUSE -> {
+                ttsManager?.announcePause()
+            }
+            ACTION_RESUME -> {
+                ttsManager?.announceResume()
             }
             ACTION_UPDATE -> {
                 val distance = intent.getStringExtra(EXTRA_DISTANCE) ?: "0.00 km"
@@ -87,8 +136,22 @@ class RunningService : Service() {
                 val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 notificationManager.notify(NOTIFICATION_ID, createNotification(distance, time, pace))
             }
+            ACTION_TTS_KILOMETER -> {
+                val km = intent.getIntExtra(EXTRA_KM, 0)
+                val pace = intent.getStringExtra(EXTRA_PACE) ?: "--:--"
+                val elapsedTime = intent.getStringExtra(EXTRA_TIME) ?: ""
+                if (km > 0) {
+                    ttsManager?.announceKilometer(km, pace, elapsedTime)
+                }
+            }
         }
         return START_STICKY
+    }
+
+    override fun onDestroy() {
+        ttsManager?.shutdown()
+        ttsManager = null
+        super.onDestroy()
     }
 
     private fun createNotificationChannel() {

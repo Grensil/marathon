@@ -45,9 +45,19 @@ import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun HistoryScreen(
+    onAudioEvent: ((AudioEvent) -> Unit)? = null,
     viewModel: RunningViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+
+    // Collect audio events and forward to caller
+    if (onAudioEvent != null) {
+        LaunchedEffect(Unit) {
+            viewModel.audioEvents.collect { event ->
+                onAudioEvent(event)
+            }
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()

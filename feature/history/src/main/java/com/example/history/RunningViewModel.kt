@@ -15,14 +15,25 @@ import com.example.healthcare.domain.usecase.StopRunningSessionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+sealed class AudioEvent {
+    data object RunStarted : AudioEvent()
+    data object RunPaused : AudioEvent()
+    data object RunResumed : AudioEvent()
+    data class RunCompleted(val distanceKm: String, val elapsedTime: String) : AudioEvent()
+    data class KilometerReached(val km: Int, val pace: String, val elapsedTime: String) : AudioEvent()
+}
 
 @HiltViewModel
 class RunningViewModel @Inject constructor(
@@ -37,6 +48,9 @@ class RunningViewModel @Inject constructor(
     private val _state = MutableStateFlow(RunningState())
     val state: StateFlow<RunningState> = _state.asStateFlow()
 
+    private val _audioEvents = MutableSharedFlow<AudioEvent>(extraBufferCapacity = 8)
+    val audioEvents: SharedFlow<AudioEvent> = _audioEvents.asSharedFlow()
+
     private var metricsJob: Job? = null
     private var timerJob: Job? = null
     private var sessionStartTime: Long = 0L
@@ -48,6 +62,7 @@ class RunningViewModel @Inject constructor(
     private val cadenceList = mutableListOf<Double>()
     private val routePoints = mutableListOf<LocationPoint>()
     private var locationPointIndex = 0
+    private var lastAnnouncedKm = 0
 
     companion object {
         private const val TAG = "Logd"
@@ -96,6 +111,7 @@ class RunningViewModel @Inject constructor(
             result.onSuccess { sessionId ->
                 sessionStartTime = System.currentTimeMillis()
                 pausedTime = 0L
+                lastAnnouncedKm = 0
 
                 heartRateList.clear()
                 paceList.clear()
@@ -103,7 +119,6 @@ class RunningViewModel @Inject constructor(
                 routePoints.clear()
                 locationPointIndex = 0
 
-                // Domain 모델로 DB에 세션 생성
                 val runHistory = RunHistory(
                     id = sessionId,
                     startTime = sessionStartTime
@@ -129,6 +144,7 @@ class RunningViewModel @Inject constructor(
                     )
                 }
 
+                _audioEvents.tryEmit(AudioEvent.RunStarted)
                 startMetricsObservation()
                 startTimer()
             }.onFailure { error ->
@@ -147,6 +163,7 @@ class RunningViewModel @Inject constructor(
         timerJob?.cancel()
         pauseStartTime = System.currentTimeMillis()
         _state.update { it.copy(isPaused = true) }
+        _audioEvents.tryEmit(AudioEvent.RunPaused)
     }
 
     fun resumeRunning() {
@@ -155,6 +172,7 @@ class RunningViewModel @Inject constructor(
             pauseStartTime = 0L
         }
         _state.update { it.copy(isPaused = false) }
+        _audioEvents.tryEmit(AudioEvent.RunResumed)
         startMetricsObservation()
         startTimer()
     }
@@ -182,7 +200,6 @@ class RunningViewModel @Inject constructor(
                         calories = currentState.calories
                     )
 
-                    // Domain 모델로 DB 업데이트
                     val runHistory = RunHistory(
                         id = sessionId,
                         startTime = sessionStartTime,
@@ -196,7 +213,6 @@ class RunningViewModel @Inject constructor(
                     )
                     runHistoryRepository.saveSession(runHistory)
 
-                    // 루트 포인트를 Domain 모델로 변환 후 DB 저장
                     if (routePoints.isNotEmpty()) {
                         val domainPoints = routePoints.mapIndexed { index, point ->
                             RoutePoint(
@@ -213,6 +229,10 @@ class RunningViewModel @Inject constructor(
                     heartRateList.clear()
                     paceList.clear()
                     cadenceList.clear()
+
+                    val distanceKm = formatDistance(currentState.distance)
+                    val elapsedTimeStr = formatElapsedTime(currentState.elapsedTime)
+                    _audioEvents.tryEmit(AudioEvent.RunCompleted(distanceKm, elapsedTimeStr))
 
                     _state.update {
                         RunningState(
@@ -288,6 +308,20 @@ class RunningViewModel @Inject constructor(
 
                     val distanceKm = (metrics.distance ?: 0.0) / 1000.0
                     val estimatedCalories = (distanceKm * 70).toInt()
+
+                    // Km milestone detection
+                    val currentKm = distanceKm.toInt()
+                    if (currentKm > lastAnnouncedKm && currentKm > 0) {
+                        lastAnnouncedKm = currentKm
+                        val elapsed = _state.value.elapsedTime
+                        _audioEvents.tryEmit(
+                            AudioEvent.KilometerReached(
+                                km = currentKm,
+                                pace = avgPace,
+                                elapsedTime = formatElapsedTime(elapsed)
+                            )
+                        )
+                    }
 
                     _state.update { state ->
                         state.copy(

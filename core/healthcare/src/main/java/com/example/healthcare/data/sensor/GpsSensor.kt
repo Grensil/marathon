@@ -4,12 +4,16 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
-import android.os.Bundle
+import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.healthcare.BuildConfig
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -29,12 +33,14 @@ data class GpsData(
 class GpsSensor @Inject constructor(
     private val context: Context
 ) {
-    private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    private val fusedLocationClient: FusedLocationProviderClient =
+        LocationServices.getFusedLocationProviderClient(context)
 
     companion object {
         private const val TAG = "GpsSensor"
-        private const val MIN_TIME_BETWEEN_UPDATES = 1000L
-        private const val MIN_DISTANCE_CHANGE = 0f
+        private const val UPDATE_INTERVAL_MS = 2000L
+        private const val FASTEST_INTERVAL_MS = 1000L
+        private const val SMALLEST_DISPLACEMENT_M = 2f
     }
 
     fun hasLocationPermission(): Boolean {
@@ -46,10 +52,6 @@ class GpsSensor @Inject constructor(
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    fun isGpsEnabled(): Boolean {
-        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-    }
-
     @SuppressLint("MissingPermission")
     fun observeLocation(): Flow<GpsData> = callbackFlow {
         if (!hasLocationPermission()) {
@@ -57,50 +59,54 @@ class GpsSensor @Inject constructor(
             return@callbackFlow
         }
 
-        if (!isGpsEnabled()) {
-            close(IllegalStateException("GPS is disabled"))
-            return@callbackFlow
-        }
+        val locationRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            UPDATE_INTERVAL_MS
+        )
+            .setMinUpdateIntervalMillis(FASTEST_INTERVAL_MS)
+            .setMinUpdateDistanceMeters(SMALLEST_DISPLACEMENT_M)
+            .setWaitForAccurateLocation(false)
+            .build()
 
-        val listener = object : LocationListener {
-            override fun onLocationChanged(location: Location) {
-                val gpsData = GpsData(
-                    latitude = location.latitude,
-                    longitude = location.longitude,
-                    altitude = if (location.hasAltitude()) location.altitude else null,
-                    speed = if (location.hasSpeed()) location.speed else null,
-                    accuracy = location.accuracy,
-                    timestamp = location.time
-                )
-                trySend(gpsData)
+        val locationCallback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                result.lastLocation?.let { location ->
+                    val gpsData = GpsData(
+                        latitude = location.latitude,
+                        longitude = location.longitude,
+                        altitude = if (location.hasAltitude()) location.altitude else null,
+                        speed = if (location.hasSpeed()) location.speed else null,
+                        accuracy = location.accuracy,
+                        timestamp = location.time
+                    )
+                    trySend(gpsData)
+                }
             }
-
-            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
-            override fun onProviderEnabled(provider: String) {}
-            override fun onProviderDisabled(provider: String) {}
         }
 
         try {
-            // 초기 더미 데이터 (Flow 시작 알림)
+            // Emit initial dummy for Flow start signal
             trySend(GpsData(0.0, 0.0, null, null, 0f, 0L))
 
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                MIN_TIME_BETWEEN_UPDATES,
-                MIN_DISTANCE_CHANGE,
-                listener
-            )
-
-            locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)?.let { last ->
-                trySend(GpsData(
-                    latitude = last.latitude,
-                    longitude = last.longitude,
-                    altitude = if (last.hasAltitude()) last.altitude else null,
-                    speed = if (last.hasSpeed()) last.speed else null,
-                    accuracy = last.accuracy,
-                    timestamp = last.time
-                ))
+            // Get last known location for quick first fix
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                location?.let {
+                    trySend(GpsData(
+                        latitude = it.latitude,
+                        longitude = it.longitude,
+                        altitude = if (it.hasAltitude()) it.altitude else null,
+                        speed = if (it.hasSpeed()) it.speed else null,
+                        accuracy = it.accuracy,
+                        timestamp = it.time
+                    ))
+                }
             }
+
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback,
+                Looper.getMainLooper()
+            )
         } catch (e: SecurityException) {
             if (BuildConfig.DEBUG) Log.e(TAG, "Security exception: ${e.message}")
             close(e)
@@ -110,7 +116,7 @@ class GpsSensor @Inject constructor(
         }
 
         awaitClose {
-            locationManager.removeUpdates(listener)
+            fusedLocationClient.removeLocationUpdates(locationCallback)
         }
     }
 

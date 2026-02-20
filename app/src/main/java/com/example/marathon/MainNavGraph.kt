@@ -1,12 +1,8 @@
 package com.example.marathon
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,9 +15,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,9 +28,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.history.AudioEvent
 import com.example.history.HistoryListScreen
 import com.example.history.HistoryScreen
 import com.example.history.RunDetailScreen
+import com.example.marathon.service.RunningService
 import com.example.recommend.RecommendScreen
 
 @Composable
@@ -44,7 +41,6 @@ fun MainScreen() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Hide bottom bar on detail screen
     val showBottomBar = currentRoute != MainRoute.RunDetail.path
 
     Scaffold(
@@ -124,12 +120,28 @@ private data class BottomNavItem(
 
 @Composable
 fun MainNavGraph(navController: NavHostController) {
+    val context = LocalContext.current
+
     NavHost(
         navController = navController,
         startDestination = MainRoute.Run.path
     ) {
         composable(route = MainRoute.Run.path) {
-            HistoryScreen()
+            HistoryScreen(
+                onAudioEvent = { event ->
+                    when (event) {
+                        is AudioEvent.RunStarted -> RunningService.startService(context)
+                        is AudioEvent.RunPaused -> RunningService.pauseService(context)
+                        is AudioEvent.RunResumed -> RunningService.resumeService(context)
+                        is AudioEvent.RunCompleted -> RunningService.stopService(
+                            context, event.distanceKm, event.elapsedTime
+                        )
+                        is AudioEvent.KilometerReached -> RunningService.announceKilometer(
+                            context, event.km, event.pace, event.elapsedTime
+                        )
+                    }
+                }
+            )
         }
 
         composable(route = MainRoute.HistoryList.path) {

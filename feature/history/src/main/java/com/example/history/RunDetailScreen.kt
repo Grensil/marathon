@@ -1,6 +1,5 @@
 package com.example.history
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,21 +24,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.healthcare.domain.model.RoutePoint
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.Polyline
+import com.google.maps.android.compose.rememberCameraPositionState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -139,8 +145,8 @@ fun RunDetailScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Route Map
-                if (state.locationPoints.isNotEmpty()) {
+                // Route Map with Google Maps
+                if (state.locationPoints.size >= 2) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
@@ -148,17 +154,13 @@ fun RunDetailScreen(
                         ),
                         shape = RoundedCornerShape(20.dp)
                     ) {
-                        Box(
+                        RouteMapView(
+                            locationPoints = state.locationPoints,
+                            routeColor = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .aspectRatio(1.5f)
-                                .padding(16.dp)
-                        ) {
-                            RouteCanvas(
-                                locationPoints = state.locationPoints,
-                                routeColor = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                                .height(280.dp)
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -242,69 +244,64 @@ fun RunDetailScreen(
 }
 
 @Composable
-private fun RouteCanvas(
+private fun RouteMapView(
     locationPoints: List<RoutePoint>,
-    routeColor: Color
+    routeColor: Color,
+    modifier: Modifier = Modifier
 ) {
-    if (locationPoints.size < 2) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Not enough GPS data",
-                color = Color.White.copy(alpha = 0.3f),
-                fontSize = 14.sp
-            )
-        }
-        return
+    val latLngPoints = remember(locationPoints) {
+        locationPoints.map { LatLng(it.latitude, it.longitude) }
     }
 
-    val minLat = locationPoints.minOf { it.latitude }
-    val maxLat = locationPoints.maxOf { it.latitude }
-    val minLon = locationPoints.minOf { it.longitude }
-    val maxLon = locationPoints.maxOf { it.longitude }
+    val bounds = remember(latLngPoints) {
+        val builder = LatLngBounds.Builder()
+        latLngPoints.forEach { builder.include(it) }
+        builder.build()
+    }
 
-    val latRange = (maxLat - minLat).coerceAtLeast(0.0001)
-    val lonRange = (maxLon - minLon).coerceAtLeast(0.0001)
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(bounds.center, 15f)
+    }
 
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val padding = 24f
-        val width = size.width - padding * 2
-        val height = size.height - padding * 2
+    LaunchedEffect(bounds) {
+        cameraPositionState.animate(
+            CameraUpdateFactory.newLatLngBounds(bounds, 64),
+            durationMs = 500
+        )
+    }
 
-        val path = Path()
-        var started = false
-
-        locationPoints.forEach { point ->
-            val x = padding + ((point.longitude - minLon) / lonRange * width).toFloat()
-            val y = padding + ((maxLat - point.latitude) / latRange * height).toFloat()
-
-            if (!started) {
-                path.moveTo(x, y)
-                started = true
-            } else {
-                path.lineTo(x, y)
-            }
-        }
-
-        drawPath(
-            path = path,
+    GoogleMap(
+        modifier = modifier,
+        cameraPositionState = cameraPositionState,
+        uiSettings = MapUiSettings(
+            zoomControlsEnabled = false,
+            scrollGesturesEnabled = true,
+            zoomGesturesEnabled = true,
+            rotationGesturesEnabled = false,
+            tiltGesturesEnabled = false,
+            mapToolbarEnabled = false
+        )
+    ) {
+        // Route polyline
+        Polyline(
+            points = latLngPoints,
             color = routeColor,
-            style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            width = 12f
         )
 
-        // Start point (green)
-        val startPoint = locationPoints.first()
-        val startX = padding + ((startPoint.longitude - minLon) / lonRange * width).toFloat()
-        val startY = padding + ((maxLat - startPoint.latitude) / latRange * height).toFloat()
-        drawCircle(color = Color(0xFF4CAF50), radius = 8f, center = Offset(startX, startY))
+        // Start marker (green)
+        Marker(
+            state = MarkerState(position = latLngPoints.first()),
+            title = "Start",
+            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)
+        )
 
-        // End point (red)
-        val endPoint = locationPoints.last()
-        val endX = padding + ((endPoint.longitude - minLon) / lonRange * width).toFloat()
-        val endY = padding + ((maxLat - endPoint.latitude) / latRange * height).toFloat()
-        drawCircle(color = Color(0xFFFF3B30), radius = 8f, center = Offset(endX, endY))
+        // End marker (red)
+        Marker(
+            state = MarkerState(position = latLngPoints.last()),
+            title = "Finish",
+            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+        )
     }
 }
 
