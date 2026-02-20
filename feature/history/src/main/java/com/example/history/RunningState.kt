@@ -1,19 +1,23 @@
 package com.example.history
 
-/**
- * 러닝 기록
- */
 data class RunningRecord(
+    val sessionId: String,
     val timestamp: Long,
     val elapsedTime: Long, // milliseconds
     val distance: Double, // meters
     val averagePace: String, // min/km
-    val averageCadence: Int? // spm
+    val averageCadence: Int?, // spm
+    val averageHeartRate: Int? = null,
+    val calories: Int = 0
 )
 
-/**
- * 러닝 화면 상태
- */
+data class LocationPoint(
+    val latitude: Double,
+    val longitude: Double,
+    val altitude: Double? = null,
+    val timestamp: Long = 0L
+)
+
 data class RunningState(
     val isRunning: Boolean = false,
     val isPaused: Boolean = false,
@@ -33,5 +37,8 @@ data class RunningState(
     val error: String? = null,
     val showCompletionDialog: Boolean = false,
     val completedRecord: RunningRecord? = null,
-    val records: List<RunningRecord> = emptyList()
+    val records: List<RunningRecord> = emptyList(),
+    val currentLatitude: Double? = null,
+    val currentLongitude: Double? = null,
+    val routePoints: List<LocationPoint> = emptyList()
 )
