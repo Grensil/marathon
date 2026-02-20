@@ -19,6 +19,7 @@ import com.example.marathon.R
 class RunningService : Service() {
 
     private var ttsManager: RunningTtsManager? = null
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
 
     companion object {
         const val CHANNEL_ID = "marathon_running_channel"
@@ -116,7 +117,7 @@ class RunningService : Service() {
                     ttsManager?.announceRunComplete(distanceKm, elapsedTime)
                 }
                 // Delay stop slightly to allow TTS to finish
-                android.os.Handler(mainLooper).postDelayed({
+                handler.postDelayed({
                     ttsManager?.shutdown()
                     ttsManager = null
                     stopForeground(STOP_FOREGROUND_REMOVE)
@@ -149,6 +150,7 @@ class RunningService : Service() {
     }
 
     override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)
         ttsManager?.shutdown()
         ttsManager = null
         super.onDestroy()

@@ -284,7 +284,7 @@ class RunningViewModel @Inject constructor(
 
                     val lat = metrics.latitude
                     val lon = metrics.longitude
-                    if (lat != null && lon != null) {
+                    if (lat != null && lon != null && lat != 0.0 && lon != 0.0) {
                         val point = LocationPoint(
                             latitude = lat,
                             longitude = lon,

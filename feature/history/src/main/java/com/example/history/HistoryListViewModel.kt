@@ -30,34 +30,24 @@ class HistoryListViewModel @Inject constructor(
 
     init {
         loadSessions()
-        loadStats()
     }
 
     private fun loadSessions() {
         viewModelScope.launch {
             runHistoryRepository.getAllSessions().collect { sessionList ->
                 _sessions.value = sessionList
+                _stats.value = RunStats(
+                    totalRuns = sessionList.size,
+                    totalDistanceKm = sessionList.sumOf { it.distanceMeters } / 1000.0,
+                    totalDurationMs = sessionList.sumOf { it.durationMs }
+                )
             }
-        }
-    }
-
-    private fun loadStats() {
-        viewModelScope.launch {
-            val totalRuns = runHistoryRepository.getSessionCount()
-            val totalDistance = runHistoryRepository.getTotalDistance()
-            val totalDuration = runHistoryRepository.getTotalDuration()
-            _stats.value = RunStats(
-                totalRuns = totalRuns,
-                totalDistanceKm = totalDistance / 1000.0,
-                totalDurationMs = totalDuration
-            )
         }
     }
 
     fun deleteSession(sessionId: String) {
         viewModelScope.launch {
             runHistoryRepository.deleteSession(sessionId)
-            loadStats()
         }
     }
 }

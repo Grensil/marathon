@@ -253,6 +253,8 @@ private fun RouteMapView(
         locationPoints.map { LatLng(it.latitude, it.longitude) }
     }
 
+    if (latLngPoints.size < 2) return
+
     val bounds = remember(latLngPoints) {
         val builder = LatLngBounds.Builder()
         latLngPoints.forEach { builder.include(it) }
