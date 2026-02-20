@@ -19,8 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.healthcare.data.local.entity.RunningSessionEntity
+import com.example.healthcare.domain.model.RunHistory
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -55,7 +53,6 @@ fun HistoryListScreen(
     ) {
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Header
         Text(
             text = "Activity",
             fontSize = 28.sp,
@@ -79,18 +76,9 @@ fun HistoryListScreen(
                     .padding(20.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                SummaryItem(
-                    label = "Total Runs",
-                    value = "${stats.totalRuns}"
-                )
-                SummaryItem(
-                    label = "Total km",
-                    value = String.format("%.1f", stats.totalDistanceKm)
-                )
-                SummaryItem(
-                    label = "Total Time",
-                    value = formatTotalTime(stats.totalDurationMs)
-                )
+                SummaryItem(label = "Total Runs", value = "${stats.totalRuns}")
+                SummaryItem(label = "Total km", value = String.format("%.1f", stats.totalDistanceKm))
+                SummaryItem(label = "Total Time", value = formatTotalTime(stats.totalDurationMs))
             }
         }
 
@@ -167,7 +155,7 @@ private fun SummaryItem(label: String, value: String) {
 
 @Composable
 private fun RunSessionItem(
-    session: RunningSessionEntity,
+    session: RunHistory,
     onClick: () -> Unit
 ) {
     Card(
@@ -214,7 +202,6 @@ private fun RunSessionItem(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Run details
             Column(modifier = Modifier.weight(1f)) {
                 val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
                 Text(
@@ -243,7 +230,6 @@ private fun RunSessionItem(
                 }
             }
 
-            // Distance
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = String.format("%.2f", session.distanceMeters / 1000.0),

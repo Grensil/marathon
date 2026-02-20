@@ -1,5 +1,6 @@
 package com.example.marathon.service
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,9 +8,11 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.example.marathon.MainActivity
 import com.example.marathon.R
 
@@ -26,6 +29,13 @@ class RunningService : Service() {
         const val EXTRA_PACE = "extra_pace"
 
         fun startService(context: Context) {
+            // Android 13+ 알림 권한 체크
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                    return
+                }
+            }
             val intent = Intent(context, RunningService::class.java).apply {
                 action = ACTION_START
             }

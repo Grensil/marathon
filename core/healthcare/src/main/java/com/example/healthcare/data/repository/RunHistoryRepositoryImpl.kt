@@ -1,10 +1,13 @@
 package com.example.healthcare.data.repository
 
 import com.example.healthcare.data.local.dao.RunningSessionDao
-import com.example.healthcare.data.local.entity.LocationPointEntity
-import com.example.healthcare.data.local.entity.RunningSessionEntity
+import com.example.healthcare.data.mapper.toDomain
+import com.example.healthcare.data.mapper.toEntity
+import com.example.healthcare.domain.model.RoutePoint
+import com.example.healthcare.domain.model.RunHistory
 import com.example.healthcare.domain.repository.RunHistoryRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,32 +16,30 @@ class RunHistoryRepositoryImpl @Inject constructor(
     private val dao: RunningSessionDao
 ) : RunHistoryRepository {
 
-    override suspend fun saveSession(session: RunningSessionEntity) {
-        dao.insertSession(session)
+    override suspend fun saveSession(session: RunHistory) {
+        dao.insertSession(session.toEntity())
     }
 
-    override suspend fun updateSession(session: RunningSessionEntity) {
-        dao.updateSession(session)
+    override suspend fun updateSession(session: RunHistory) {
+        dao.updateSession(session.toEntity())
     }
 
-    override fun getAllSessions(): Flow<List<RunningSessionEntity>> {
-        return dao.getAllSessions()
+    override fun getAllSessions(): Flow<List<RunHistory>> {
+        return dao.getAllSessions().map { entities ->
+            entities.map { it.toDomain() }
+        }
     }
 
-    override suspend fun getSessionById(id: String): RunningSessionEntity? {
-        return dao.getSessionById(id)
+    override suspend fun getSessionById(id: String): RunHistory? {
+        return dao.getSessionById(id)?.toDomain()
     }
 
-    override suspend fun saveLocationPoint(point: LocationPointEntity) {
-        dao.insertLocationPoint(point)
+    override suspend fun saveLocationPoints(sessionId: String, points: List<RoutePoint>) {
+        dao.insertLocationPoints(points.map { it.toEntity(sessionId) })
     }
 
-    override suspend fun saveLocationPoints(points: List<LocationPointEntity>) {
-        dao.insertLocationPoints(points)
-    }
-
-    override suspend fun getLocationPoints(sessionId: String): List<LocationPointEntity> {
-        return dao.getLocationPoints(sessionId)
+    override suspend fun getLocationPoints(sessionId: String): List<RoutePoint> {
+        return dao.getLocationPoints(sessionId).map { it.toDomain() }
     }
 
     override suspend fun deleteSession(sessionId: String) {

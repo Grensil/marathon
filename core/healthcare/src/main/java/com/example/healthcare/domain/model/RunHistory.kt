@@ -1,15 +1,7 @@
-package com.example.healthcare.data.local.entity
+package com.example.healthcare.domain.model
 
-import androidx.room.Entity
-import androidx.room.Index
-import androidx.room.PrimaryKey
-
-@Entity(
-    tableName = "running_sessions",
-    indices = [Index("startTime")]
-)
-data class RunningSessionEntity(
-    @PrimaryKey val id: String,
+data class RunHistory(
+    val id: String,
     val startTime: Long,
     val endTime: Long = 0L,
     val durationMs: Long = 0L,
@@ -21,4 +13,13 @@ data class RunningSessionEntity(
     val maxHeartRate: Int? = null,
     val maxPace: String? = null,
     val totalSteps: Int = 0
+)
+
+data class RoutePoint(
+    val latitude: Double,
+    val longitude: Double,
+    val altitude: Double? = null,
+    val speed: Float? = null,
+    val timestamp: Long = 0L,
+    val orderIndex: Int = 0
 )

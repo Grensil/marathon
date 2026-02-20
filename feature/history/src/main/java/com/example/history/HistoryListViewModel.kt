@@ -2,7 +2,7 @@ package com.example.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.healthcare.data.local.entity.RunningSessionEntity
+import com.example.healthcare.domain.model.RunHistory
 import com.example.healthcare.domain.repository.RunHistoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,8 +22,8 @@ class HistoryListViewModel @Inject constructor(
     private val runHistoryRepository: RunHistoryRepository
 ) : ViewModel() {
 
-    private val _sessions = MutableStateFlow<List<RunningSessionEntity>>(emptyList())
-    val sessions: StateFlow<List<RunningSessionEntity>> = _sessions.asStateFlow()
+    private val _sessions = MutableStateFlow<List<RunHistory>>(emptyList())
+    val sessions: StateFlow<List<RunHistory>> = _sessions.asStateFlow()
 
     private val _stats = MutableStateFlow(RunStats())
     val stats: StateFlow<RunStats> = _stats.asStateFlow()

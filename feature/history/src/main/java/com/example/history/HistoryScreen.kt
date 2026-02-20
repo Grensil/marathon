@@ -1,14 +1,11 @@
 package com.example.history
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,7 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -61,8 +58,10 @@ fun HistoryScreen(
         }
     }
 
+    val context = LocalContext.current
+
     LaunchedEffect(Unit) {
-        val permissions = buildList {
+        val requiredPermissions = buildList {
             add(Manifest.permission.ACCESS_FINE_LOCATION)
             add(Manifest.permission.ACCESS_COARSE_LOCATION)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -72,7 +71,16 @@ fun HistoryScreen(
                 add(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-        permissionLauncher.launch(permissions.toTypedArray())
+        // 아직 허용되지 않은 권한만 요청
+        val notGranted = requiredPermissions.filter {
+            androidx.core.content.ContextCompat.checkSelfPermission(context, it) !=
+                PackageManager.PERMISSION_GRANTED
+        }
+        if (notGranted.isNotEmpty()) {
+            permissionLauncher.launch(notGranted.toTypedArray())
+        } else {
+            viewModel.onPermissionGranted()
+        }
     }
 
     Box(

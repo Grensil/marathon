@@ -59,7 +59,7 @@ fun MainScreen() {
                 ) {
                     val items = listOf(
                         BottomNavItem(MainRoute.Run.path, "Run", R.drawable.icon_run),
-                        BottomNavItem(MainRoute.HistoryList.path, "History", R.drawable.icon_recommend),
+                        BottomNavItem(MainRoute.HistoryList.path, "History", R.drawable.icon_history),
                     )
 
                     items.forEach { item ->

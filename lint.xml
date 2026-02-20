@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Security -->
+    <issue id="HardcodedDebugMode" severity="error" />
+    <issue id="AllowBackup" severity="warning" />
+    <issue id="ExportedContentProvider" severity="error" />
+    <issue id="ExportedReceiver" severity="error" />
+    <issue id="ExportedService" severity="error" />
+    <issue id="SetWorldReadable" severity="error" />
+    <issue id="SetWorldWritable" severity="error" />
+    <issue id="SecureRandom" severity="warning" />
+
+    <!-- Performance -->
+    <issue id="ObsoleteSdkInt" severity="warning" />
+    <issue id="Recycle" severity="warning" />
+    <issue id="ViewHolder" severity="warning" />
+
+    <!-- Correctness -->
+    <issue id="MissingPermission" severity="error" />
+    <issue id="MissingSuperCall" severity="error" />
+    <issue id="NewApi" severity="error" />
+    <issue id="InlinedApi" severity="warning" />
+
+    <!-- Accessibility -->
+    <issue id="ContentDescription" severity="warning" />
+
+    <!-- Internationalization -->
+    <issue id="HardcodedText" severity="informational" />
+
+    <!-- Unused resources -->
+    <issue id="UnusedResources" severity="warning" />
+</lint>

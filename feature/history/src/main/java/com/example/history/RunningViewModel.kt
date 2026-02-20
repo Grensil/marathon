@@ -3,9 +3,9 @@ package com.example.history
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.healthcare.data.local.entity.LocationPointEntity
-import com.example.healthcare.data.local.entity.RunningSessionEntity
 import com.example.healthcare.domain.model.ExerciseType
+import com.example.healthcare.domain.model.RoutePoint
+import com.example.healthcare.domain.model.RunHistory
 import com.example.healthcare.domain.repository.RunHistoryRepository
 import com.example.healthcare.domain.usecase.CheckHealthConnectPermissionsUseCase
 import com.example.healthcare.domain.usecase.GetActiveSessionUseCase
@@ -97,19 +97,18 @@ class RunningViewModel @Inject constructor(
                 sessionStartTime = System.currentTimeMillis()
                 pausedTime = 0L
 
-                // Clear previous data
                 heartRateList.clear()
                 paceList.clear()
                 cadenceList.clear()
                 routePoints.clear()
                 locationPointIndex = 0
 
-                // Create session in DB
-                val sessionEntity = RunningSessionEntity(
+                // Domain 모델로 DB에 세션 생성
+                val runHistory = RunHistory(
                     id = sessionId,
                     startTime = sessionStartTime
                 )
-                runHistoryRepository.saveSession(sessionEntity)
+                runHistoryRepository.saveSession(runHistory)
 
                 _state.update {
                     it.copy(
@@ -183,8 +182,8 @@ class RunningViewModel @Inject constructor(
                         calories = currentState.calories
                     )
 
-                    // Update session in DB with final stats
-                    val sessionEntity = RunningSessionEntity(
+                    // Domain 모델로 DB 업데이트
+                    val runHistory = RunHistory(
                         id = sessionId,
                         startTime = sessionStartTime,
                         endTime = System.currentTimeMillis(),
@@ -195,13 +194,12 @@ class RunningViewModel @Inject constructor(
                         averageCadence = currentState.averageCadence,
                         calories = currentState.calories
                     )
-                    runHistoryRepository.saveSession(sessionEntity)
+                    runHistoryRepository.saveSession(runHistory)
 
-                    // Save location points to DB
+                    // 루트 포인트를 Domain 모델로 변환 후 DB 저장
                     if (routePoints.isNotEmpty()) {
-                        val locationEntities = routePoints.mapIndexed { index, point ->
-                            LocationPointEntity(
-                                sessionId = sessionId,
+                        val domainPoints = routePoints.mapIndexed { index, point ->
+                            RoutePoint(
                                 latitude = point.latitude,
                                 longitude = point.longitude,
                                 altitude = point.altitude,
@@ -209,7 +207,7 @@ class RunningViewModel @Inject constructor(
                                 orderIndex = index
                             )
                         }
-                        runHistoryRepository.saveLocationPoints(locationEntities)
+                        runHistoryRepository.saveLocationPoints(sessionId, domainPoints)
                     }
 
                     heartRateList.clear()
@@ -255,7 +253,7 @@ class RunningViewModel @Inject constructor(
                     }
 
                     metrics.pace?.let { p ->
-                        if (p in 1.0..30.0) { // valid pace range
+                        if (p in 1.0..30.0) {
                             paceList.add(p)
                         }
                     }
@@ -264,7 +262,6 @@ class RunningViewModel @Inject constructor(
                         cadenceList.add(c)
                     }
 
-                    // Save location point for route
                     val lat = metrics.latitude
                     val lon = metrics.longitude
                     if (lat != null && lon != null) {
@@ -289,7 +286,6 @@ class RunningViewModel @Inject constructor(
                         heartRateList.average().toInt()
                     } else null
 
-                    // Calorie estimation: ~1 kcal per kg per km (assume 70kg)
                     val distanceKm = (metrics.distance ?: 0.0) / 1000.0
                     val estimatedCalories = (distanceKm * 70).toInt()
 

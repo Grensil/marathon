@@ -70,8 +70,4 @@ dependencies {
     // Google Maps Compose
     implementation(libs.maps.compose)
     implementation(libs.play.services.maps)
-
-    // Room (for entities)
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
 }

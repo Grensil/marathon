@@ -2,8 +2,8 @@ package com.example.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.healthcare.data.local.entity.LocationPointEntity
-import com.example.healthcare.data.local.entity.RunningSessionEntity
+import com.example.healthcare.domain.model.RoutePoint
+import com.example.healthcare.domain.model.RunHistory
 import com.example.healthcare.domain.repository.RunHistoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,8 +13,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class RunDetailState(
-    val session: RunningSessionEntity? = null,
-    val locationPoints: List<LocationPointEntity> = emptyList(),
+    val session: RunHistory? = null,
+    val locationPoints: List<RoutePoint> = emptyList(),
     val isLoading: Boolean = true
 )
 

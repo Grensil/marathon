@@ -44,7 +44,9 @@ abstract class HealthcareModule {
                 context,
                 MarathonDatabase::class.java,
                 "marathon_database"
-            ).build()
+            )
+                .fallbackToDestructiveMigration()
+                .build()
         }
 
         @Provides

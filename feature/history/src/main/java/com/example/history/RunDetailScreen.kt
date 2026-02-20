@@ -2,6 +2,7 @@ package com.example.history
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,15 +20,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,7 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.healthcare.data.local.entity.LocationPointEntity
+import com.example.healthcare.domain.model.RoutePoint
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -96,10 +93,8 @@ fun RunDetailScreen(
                         modifier = Modifier
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.surface)
+                            .clickable { onBack() }
                             .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .let { mod ->
-                                mod
-                            }
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -123,7 +118,7 @@ fun RunDetailScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Main distance display
+                // Main distance
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -144,7 +139,7 @@ fun RunDetailScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Route Map Card
+                // Route Map
                 if (state.locationPoints.isNotEmpty()) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -177,8 +172,7 @@ fun RunDetailScreen(
                     DetailStatCard(
                         modifier = Modifier.weight(1f),
                         label = "Duration",
-                        value = formatDuration(session.durationMs),
-                        icon = null
+                        value = formatDuration(session.durationMs)
                     )
                     DetailStatCard(
                         modifier = Modifier.weight(1f),
@@ -249,7 +243,7 @@ fun RunDetailScreen(
 
 @Composable
 private fun RouteCanvas(
-    locationPoints: List<LocationPointEntity>,
+    locationPoints: List<RoutePoint>,
     routeColor: Color
 ) {
     if (locationPoints.size < 2) {
@@ -294,36 +288,23 @@ private fun RouteCanvas(
             }
         }
 
-        // Draw route
         drawPath(
             path = path,
             color = routeColor,
-            style = Stroke(
-                width = 4f,
-                cap = StrokeCap.Round,
-                join = StrokeJoin.Round
-            )
+            style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round)
         )
 
-        // Start point
+        // Start point (green)
         val startPoint = locationPoints.first()
         val startX = padding + ((startPoint.longitude - minLon) / lonRange * width).toFloat()
         val startY = padding + ((maxLat - startPoint.latitude) / latRange * height).toFloat()
-        drawCircle(
-            color = Color(0xFF4CAF50),
-            radius = 8f,
-            center = Offset(startX, startY)
-        )
+        drawCircle(color = Color(0xFF4CAF50), radius = 8f, center = Offset(startX, startY))
 
-        // End point
+        // End point (red)
         val endPoint = locationPoints.last()
         val endX = padding + ((endPoint.longitude - minLon) / lonRange * width).toFloat()
         val endY = padding + ((maxLat - endPoint.latitude) / latRange * height).toFloat()
-        drawCircle(
-            color = Color(0xFFFF3B30),
-            radius = 8f,
-            center = Offset(endX, endY)
-        )
+        drawCircle(color = Color(0xFFFF3B30), radius = 8f, center = Offset(endX, endY))
     }
 }
 
@@ -333,7 +314,6 @@ private fun DetailStatCard(
     label: String,
     value: String,
     unit: String? = null,
-    icon: String? = null,
     valueColor: Color = Color.White
 ) {
     Card(

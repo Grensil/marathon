@@ -9,7 +9,7 @@ import com.example.healthcare.data.local.entity.RunningSessionEntity
 @Database(
     entities = [RunningSessionEntity::class, LocationPointEntity::class],
     version = 1,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class MarathonDatabase : RoomDatabase() {
     abstract fun runningSessionDao(): RunningSessionDao
