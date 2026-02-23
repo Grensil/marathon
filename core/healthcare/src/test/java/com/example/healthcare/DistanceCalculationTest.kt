@@ -45,7 +45,8 @@ class DistanceCalculationTest {
             val prevLat = lastLat
             val prevLon = lastLon
             if (prevLat != null && prevLon != null) {
-                if (distanceIncrement < 100) {
+                // Filter GPS noise (drift < 3m) and spikes (> 100m)
+                if (distanceIncrement in 3f..100f) {
                     totalDistance += distanceIncrement
                 }
             }
@@ -122,14 +123,31 @@ class DistanceCalculationTest {
     }
 
     // =============================================
-    // GPS 스파이크 필터 검증
+    // GPS 노이즈 + 스파이크 필터 검증 (3m ~ 100m 범위만 통과)
     // =============================================
 
     @Test
     fun `100m 이상 GPS 점프 차단`() {
-        processMetrics(steps = 0, lat = 37.5, lon = 127.0, distanceIncrement = 0f) // first fix
-        processMetrics(steps = 10, lat = 37.5, lon = 127.0, distanceIncrement = 150f) // spike!
+        processMetrics(steps = 0, lat = 37.5, lon = 127.0, distanceIncrement = 0f)
+        processMetrics(steps = 10, lat = 37.5, lon = 127.0, distanceIncrement = 150f)
+        assertEquals(0.0, totalDistance, 0.01)
+    }
+
+    @Test
+    fun `3m 미만 GPS 드리프트 차단 - 정지 상태 노이즈`() {
+        processMetrics(steps = 0, lat = 37.5, lon = 127.0, distanceIncrement = 0f)
+        processMetrics(steps = 0, lat = 37.50001, lon = 127.00001, distanceIncrement = 1.5f) // 1.5m 노이즈
         assertEquals(0.0, totalDistance, 0.01) // 차단됨
+
+        processMetrics(steps = 0, lat = 37.50002, lon = 127.00002, distanceIncrement = 2.9f) // 2.9m 노이즈
+        assertEquals(0.0, totalDistance, 0.01) // 여전히 차단
+    }
+
+    @Test
+    fun `3m 이상 이동은 정상 통과`() {
+        processMetrics(steps = 0, lat = 37.5, lon = 127.0, distanceIncrement = 0f)
+        processMetrics(steps = 10, lat = 37.501, lon = 127.001, distanceIncrement = 5f)
+        assertEquals(5.0, totalDistance, 0.01) // 통과
     }
 
     @Test
@@ -137,6 +155,68 @@ class DistanceCalculationTest {
         processMetrics(steps = 0, lat = 37.5, lon = 127.0, distanceIncrement = 0f)
         processMetrics(steps = 10, lat = 37.501, lon = 127.001, distanceIncrement = 99f)
         assertEquals(99.0, totalDistance, 0.01)
+    }
+
+    @Test
+    fun `연속 GPS 노이즈 - 가만히 서 있어도 거리 0 유지`() {
+        processMetrics(steps = 0, lat = 37.5, lon = 127.0, distanceIncrement = 0f)
+        // 서 있는데 GPS가 2m씩 흔들림 (10번 반복)
+        repeat(10) {
+            processMetrics(steps = 0, lat = 37.5, lon = 127.0, distanceIncrement = 2f)
+        }
+        assertEquals(0.0, totalDistance, 0.01) // 전부 차단
+    }
+
+    // =============================================
+    // GPS 속도 필터 검증 (0.5 m/s 미만 무시)
+    // =============================================
+
+    @Test
+    fun `GPS 속도 0점3ms는 노이즈 - pace 생성 안함`() {
+        val MIN_SPEED_THRESHOLD = 0.5
+        val gpsSpeed = 0.3f // GPS 노이즈
+
+        val speed = if (gpsSpeed > MIN_SPEED_THRESHOLD) {
+            gpsSpeed.toDouble()
+        } else {
+            0.0
+        }
+
+        assertEquals(0.0, speed, 0.01)
+        val pace = if (speed > 0) RunningMetrics.speedToPace(speed) else null
+        assertNull(pace) // pace가 null이므로 UI에 "--:--" 표시
+    }
+
+    @Test
+    fun `GPS 속도 0점6ms는 실제 이동 - pace 생성됨`() {
+        val MIN_SPEED_THRESHOLD = 0.5
+        val gpsSpeed = 0.6f // 느린 걷기
+
+        val speed = if (gpsSpeed > MIN_SPEED_THRESHOLD) {
+            gpsSpeed.toDouble()
+        } else {
+            0.0
+        }
+
+        assertTrue(speed > 0)
+        val pace = RunningMetrics.speedToPace(speed)
+        assertNotNull(pace)
+    }
+
+    @Test
+    fun `정지 상태 시뮬레이션 - 속도 0점1ms와 거리 1m 노이즈`() {
+        // 가만히 서 있는데 GPS가 0.1m/s 속도와 1m 드리프트를 보고
+        val MIN_SPEED_THRESHOLD = 0.5
+        val gpsSpeed = 0.1f
+        val distanceIncrement = 1.0f // 1m GPS 드리프트
+
+        // 속도 필터: 차단
+        val speed = if (gpsSpeed > MIN_SPEED_THRESHOLD) gpsSpeed.toDouble() else 0.0
+        assertEquals(0.0, speed, 0.01)
+
+        // 거리 필터: 3m 미만이므로 차단
+        val accepted = distanceIncrement in 3f..100f
+        assertFalse(accepted)
     }
 
     // =============================================

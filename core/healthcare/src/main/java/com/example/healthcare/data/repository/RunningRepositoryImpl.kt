@@ -111,7 +111,8 @@ class RunningRepositoryImpl @Inject constructor(
                         prevLat, prevLon,
                         gpsData.latitude, gpsData.longitude
                     )
-                    if (distanceIncrement < 100) {
+                    // Filter GPS noise (drift < 3m) and spikes (> 100m)
+                    if (distanceIncrement in 3f..100f) {
                         totalDistance += distanceIncrement
                     }
                 }
@@ -122,7 +123,10 @@ class RunningRepositoryImpl @Inject constructor(
                 totalDistance = totalSteps * 0.75
             }
 
-            val speed = if (hasValidGps && gpsData.speed != null && gpsData.speed > 0) {
+            // Minimum speed threshold: 0.5 m/s (~1.8 km/h) filters GPS noise at standstill
+            val MIN_SPEED_THRESHOLD = 0.5
+
+            val speed = if (hasValidGps && gpsData.speed != null && gpsData.speed > MIN_SPEED_THRESHOLD) {
                 gpsData.speed.toDouble()
             } else if (elapsedSeconds > 0 && totalDistance > 0) {
                 totalDistance / elapsedSeconds
