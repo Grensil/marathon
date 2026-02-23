@@ -123,13 +123,13 @@ class RunningRepositoryImpl @Inject constructor(
                 totalDistance = totalSteps * 0.75
             }
 
-            // Minimum speed threshold: 0.5 m/s (~1.8 km/h) filters GPS noise at standstill
+            // Only use GPS-reported speed for current pace.
+            // Fallback (totalDistance / elapsedSeconds) gives session AVERAGE, not current speed,
+            // which causes fake pace display when standing still.
             val MIN_SPEED_THRESHOLD = 0.5
 
             val speed = if (hasValidGps && gpsData.speed != null && gpsData.speed > MIN_SPEED_THRESHOLD) {
                 gpsData.speed.toDouble()
-            } else if (elapsedSeconds > 0 && totalDistance > 0) {
-                totalDistance / elapsedSeconds
             } else {
                 0.0
             }
