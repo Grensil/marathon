@@ -63,6 +63,9 @@ class RunningViewModel @Inject constructor(
     private val routePoints = mutableListOf<LocationPoint>()
     private var locationPointIndex = 0
     private var lastAnnouncedKm = 0
+    private var maxHeartRate: Int? = null
+    private var bestPace: Double? = null
+    private var totalStepCount: Int = 0
 
     companion object {
         private const val TAG = "Logd"
@@ -118,6 +121,9 @@ class RunningViewModel @Inject constructor(
                 cadenceList.clear()
                 routePoints.clear()
                 locationPointIndex = 0
+                maxHeartRate = null
+                bestPace = null
+                totalStepCount = 0
 
                 val runHistory = RunHistory(
                     id = sessionId,
@@ -180,15 +186,17 @@ class RunningViewModel @Inject constructor(
     fun stopRunning() {
         viewModelScope.launch {
             val sessionId = _state.value.sessionId ?: return@launch
+
+            // Cancel jobs FIRST to prevent race condition on state
+            metricsJob?.cancel()
+            timerJob?.cancel()
+
             val currentState = _state.value
 
             _state.update { it.copy(isLoading = true) }
 
             stopRunningSessionUseCase(sessionId)
                 .onSuccess {
-                    metricsJob?.cancel()
-                    timerJob?.cancel()
-
                     val record = RunningRecord(
                         sessionId = sessionId,
                         timestamp = System.currentTimeMillis(),
@@ -209,9 +217,12 @@ class RunningViewModel @Inject constructor(
                         averagePace = currentState.averagePace,
                         averageHeartRate = currentState.averageHeartRate,
                         averageCadence = currentState.averageCadence,
-                        calories = currentState.calories
+                        calories = currentState.calories,
+                        maxHeartRate = maxHeartRate,
+                        maxPace = bestPace?.let { formatPace(it) },
+                        totalSteps = totalStepCount
                     )
-                    runHistoryRepository.saveSession(runHistory)
+                    runHistoryRepository.updateSession(runHistory)
 
                     if (routePoints.isNotEmpty()) {
                         val domainPoints = routePoints.mapIndexed { index, point ->
@@ -229,6 +240,10 @@ class RunningViewModel @Inject constructor(
                     heartRateList.clear()
                     paceList.clear()
                     cadenceList.clear()
+                    routePoints.clear()
+                    maxHeartRate = null
+                    bestPace = null
+                    totalStepCount = 0
 
                     val distanceKm = formatDistance(currentState.distance)
                     val elapsedTimeStr = formatElapsedTime(currentState.elapsedTime)
@@ -270,16 +285,26 @@ class RunningViewModel @Inject constructor(
                 .collect { metrics ->
                     metrics.heartRate?.let { hr ->
                         heartRateList.add(hr)
+                        if (maxHeartRate == null || hr > maxHeartRate!!) {
+                            maxHeartRate = hr
+                        }
                     }
 
                     metrics.pace?.let { p ->
                         if (p in 1.0..30.0) {
                             paceList.add(p)
+                            if (bestPace == null || p < bestPace!!) {
+                                bestPace = p
+                            }
                         }
                     }
 
                     metrics.cadence?.let { c ->
                         cadenceList.add(c)
+                        totalStepCount = (metrics.distance?.let {
+                            // Steps from metrics if available
+                            (it / 0.75).toInt()
+                        }) ?: totalStepCount
                     }
 
                     val lat = metrics.latitude

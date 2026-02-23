@@ -34,6 +34,7 @@ class RunningRepositoryImpl @Inject constructor(
     @Volatile private var totalDistance: Double = 0.0
     @Volatile private var lastLatitude: Double? = null
     @Volatile private var lastLongitude: Double? = null
+    @Volatile private var hasEverReceivedGps: Boolean = false
 
     companion object {
         private const val TAG = "Logd"
@@ -50,6 +51,7 @@ class RunningRepositoryImpl @Inject constructor(
             totalDistance = 0.0
             lastLatitude = null
             lastLongitude = null
+            hasEverReceivedGps = false
 
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Session started: $sessionId")
@@ -66,6 +68,7 @@ class RunningRepositoryImpl @Inject constructor(
             totalDistance = 0.0
             lastLatitude = null
             lastLongitude = null
+            hasEverReceivedGps = false
             stepCounterSensor.resetSession()
 
             if (BuildConfig.DEBUG) {
@@ -96,7 +99,11 @@ class RunningRepositoryImpl @Inject constructor(
 
             val hasValidGps = gpsData.latitude != 0.0 && gpsData.longitude != 0.0
 
+            // Update steps BEFORE distance calculation
+            totalSteps = steps
+
             if (hasValidGps) {
+                hasEverReceivedGps = true
                 val prevLat = lastLatitude
                 val prevLon = lastLongitude
                 if (prevLat != null && prevLon != null) {
@@ -110,7 +117,8 @@ class RunningRepositoryImpl @Inject constructor(
                 }
                 lastLatitude = gpsData.latitude
                 lastLongitude = gpsData.longitude
-            } else {
+            } else if (!hasEverReceivedGps) {
+                // Only use step-based distance if GPS was NEVER available
                 totalDistance = totalSteps * 0.75
             }
 
@@ -125,8 +133,6 @@ class RunningRepositoryImpl @Inject constructor(
             val pace = if (speed > 0) {
                 RunningMetrics.speedToPace(speed)
             } else null
-
-            totalSteps = steps
 
             val cadence = if (totalSteps > 0 && elapsedSeconds > 0) {
                 (totalSteps.toDouble() / elapsedSeconds) * 60.0

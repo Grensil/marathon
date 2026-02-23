@@ -24,6 +24,7 @@ class StepCounterSensor @Inject constructor(
 ) {
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val stepCounterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
+    @Suppress("unused")
     private val stepDetectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
 
     @Volatile private var initialStepCount: Int? = null
@@ -71,25 +72,11 @@ class StepCounterSensor @Inject constructor(
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
         }
 
-        val stepDetectorListener = object : SensorEventListener {
-            override fun onSensorChanged(event: SensorEvent?) {
-                sessionSteps++
-                trySend(sessionSteps)
-            }
-            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-        }
-
         val counterRegistered = sensorManager.registerListener(
             stepCounterListener, stepCounterSensor, SensorManager.SENSOR_DELAY_UI
         )
 
-        val detectorRegistered = stepDetectorSensor?.let {
-            sensorManager.registerListener(
-                stepDetectorListener, it, SensorManager.SENSOR_DELAY_UI
-            )
-        } ?: false
-
-        if (!counterRegistered && !detectorRegistered) {
+        if (!counterRegistered) {
             close(IllegalStateException("Failed to register sensor listener"))
         }
 
@@ -103,7 +90,6 @@ class StepCounterSensor @Inject constructor(
 
         awaitClose {
             sensorManager.unregisterListener(stepCounterListener)
-            sensorManager.unregisterListener(stepDetectorListener)
         }
     }
 
