@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -122,7 +123,8 @@ fun HistoryListScreen(
                 items(sessions) { session ->
                     RunSessionItem(
                         session = session,
-                        onClick = { onSessionClick(session.id) }
+                        onClick = { onSessionClick(session.id) },
+                        onDelete = { viewModel.deleteSession(session.id) }
                     )
                 }
                 item {
@@ -156,7 +158,8 @@ private fun SummaryItem(label: String, value: String) {
 @Composable
 private fun RunSessionItem(
     session: RunHistory,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -241,6 +244,18 @@ private fun RunSessionItem(
                     text = "km",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            TextButton(
+                onClick = onDelete,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Text(
+                    text = "X",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             }
         }

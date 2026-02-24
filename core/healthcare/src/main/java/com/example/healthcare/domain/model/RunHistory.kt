@@ -6,7 +6,7 @@ data class RunHistory(
     val endTime: Long = 0L,
     val durationMs: Long = 0L,
     val distanceMeters: Double = 0.0,
-    val averagePace: String = "--:--",
+    val averagePace: String = "00:00",
     val averageHeartRate: Int? = null,
     val averageCadence: Int? = null,
     val calories: Int = 0,

@@ -35,6 +35,7 @@ class RunningRepositoryImpl @Inject constructor(
     @Volatile private var lastLatitude: Double? = null
     @Volatile private var lastLongitude: Double? = null
     @Volatile private var hasEverReceivedGps: Boolean = false
+    @Volatile private var lastGpsUpdateTime: Long = 0L
 
     companion object {
         private const val TAG = "Logd"
@@ -52,6 +53,7 @@ class RunningRepositoryImpl @Inject constructor(
             lastLatitude = null
             lastLongitude = null
             hasEverReceivedGps = false
+            lastGpsUpdateTime = 0L
 
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Session started: $sessionId")
@@ -69,6 +71,7 @@ class RunningRepositoryImpl @Inject constructor(
             lastLatitude = null
             lastLongitude = null
             hasEverReceivedGps = false
+            lastGpsUpdateTime = 0L
             stepCounterSensor.resetSession()
 
             if (BuildConfig.DEBUG) {
@@ -102,12 +105,22 @@ class RunningRepositoryImpl @Inject constructor(
             // Update steps BEFORE distance calculation
             totalSteps = steps
 
+            var distanceIncrement = 0f
+            var timeDeltaSeconds = 0.0
+
             if (hasValidGps) {
                 hasEverReceivedGps = true
+
+                // Calculate time since last GPS update BEFORE updating timestamp
+                if (lastGpsUpdateTime > 0) {
+                    timeDeltaSeconds = (gpsData.timestamp - lastGpsUpdateTime) / 1000.0
+                }
+                lastGpsUpdateTime = gpsData.timestamp
+
                 val prevLat = lastLatitude
                 val prevLon = lastLongitude
                 if (prevLat != null && prevLon != null) {
-                    val distanceIncrement = gpsSensor.calculateDistance(
+                    distanceIncrement = gpsSensor.calculateDistance(
                         prevLat, prevLon,
                         gpsData.latitude, gpsData.longitude
                     )
@@ -123,13 +136,13 @@ class RunningRepositoryImpl @Inject constructor(
                 totalDistance = totalSteps * 0.75
             }
 
-            // Only use GPS-reported speed for current pace.
-            // Fallback (totalDistance / elapsedSeconds) gives session AVERAGE, not current speed,
-            // which causes fake pace display when standing still.
-            val MIN_SPEED_THRESHOLD = 0.5
-
-            val speed = if (hasValidGps && gpsData.speed != null && gpsData.speed > MIN_SPEED_THRESHOLD) {
-                gpsData.speed.toDouble()
+            // Calculate speed from ACTUAL position change, not GPS-reported speed.
+            // GPS speed is noisy and device-dependent. Position change is reliable.
+            // - Moving: distanceIncrement >= 3m in ~2s → speed calculated
+            // - Standing still: GPS drift < 3m → speed = 0 → "--:--"
+            // - Response time: ~2 seconds (one GPS update cycle)
+            val speed = if (distanceIncrement >= 3f && timeDeltaSeconds > 0) {
+                (distanceIncrement / timeDeltaSeconds).toDouble()
             } else {
                 0.0
             }

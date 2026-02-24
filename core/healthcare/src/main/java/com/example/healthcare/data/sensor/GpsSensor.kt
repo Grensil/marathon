@@ -40,7 +40,7 @@ class GpsSensor @Inject constructor(
         private const val TAG = "GpsSensor"
         private const val UPDATE_INTERVAL_MS = 2000L
         private const val FASTEST_INTERVAL_MS = 1000L
-        private const val SMALLEST_DISPLACEMENT_M = 2f
+        private const val SMALLEST_DISPLACEMENT_M = 0f
     }
 
     fun hasLocationPermission(): Boolean {

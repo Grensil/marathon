@@ -174,7 +174,8 @@ fun RunDetailScreen(
                     DetailStatCard(
                         modifier = Modifier.weight(1f),
                         label = "Duration",
-                        value = formatDuration(session.durationMs)
+                        value = formatDuration(session.durationMs),
+                        unit = ""
                     )
                     DetailStatCard(
                         modifier = Modifier.weight(1f),
@@ -193,13 +194,13 @@ fun RunDetailScreen(
                     DetailStatCard(
                         modifier = Modifier.weight(1f),
                         label = "Cadence",
-                        value = session.averageCadence?.toString() ?: "--",
+                        value = session.averageCadence?.toString() ?: "0",
                         unit = "spm"
                     )
                     DetailStatCard(
                         modifier = Modifier.weight(1f),
                         label = "Heart Rate",
-                        value = session.averageHeartRate?.toString() ?: "--",
+                        value = session.averageHeartRate?.toString() ?: "0",
                         unit = "bpm",
                         valueColor = MaterialTheme.colorScheme.tertiary
                     )
@@ -221,7 +222,7 @@ fun RunDetailScreen(
                     DetailStatCard(
                         modifier = Modifier.weight(1f),
                         label = "Steps",
-                        value = if (session.totalSteps > 0) "${session.totalSteps}" else "--",
+                        value = if (session.totalSteps > 0) "${session.totalSteps}" else "0",
                         unit = "steps"
                     )
                 }
@@ -343,13 +344,12 @@ private fun DetailStatCard(
                 color = valueColor,
                 textAlign = TextAlign.Center
             )
-            if (unit != null) {
-                Text(
-                    text = unit,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = unit ?: "",
+                fontSize = 12.sp,
+                color = if (unit.isNullOrEmpty()) Color.Transparent
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
