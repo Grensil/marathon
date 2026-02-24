@@ -1,5 +1,10 @@
 package com.example.history
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,18 +18,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.TextButton
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +54,10 @@ fun HistoryListScreen(
 ) {
     val sessions by viewModel.sessions.collectAsState()
     val stats by viewModel.stats.collectAsState()
+    val sortOrder by viewModel.sortOrder.collectAsState()
+
+    var isEditMode by remember { mutableStateOf(false) }
+    var showSortMenu by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -84,12 +98,74 @@ fun HistoryListScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = "Recent Runs",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
-        )
+        // Recent Runs header with Edit and Sort buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Recent Runs",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            if (sessions.isNotEmpty()) {
+                // Edit button
+                TextButton(onClick = { isEditMode = !isEditMode }) {
+                    Text(
+                        text = if (isEditMode) "Done" else "Edit",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isEditMode) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Sort button
+                Box {
+                    TextButton(onClick = { showSortMenu = true }) {
+                        Text(
+                            text = sortOrder.label,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = " \u25BE",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showSortMenu,
+                        onDismissRequest = { showSortMenu = false },
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ) {
+                        SortOrder.entries.forEach { order ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = order.label,
+                                        fontWeight = if (order == sortOrder) FontWeight.Bold
+                                        else FontWeight.Normal,
+                                        color = if (order == sortOrder) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                onClick = {
+                                    viewModel.setSortOrder(order)
+                                    showSortMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -119,9 +195,10 @@ fun HistoryListScreen(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(sessions) { session ->
+                items(sessions, key = { it.id }) { session ->
                     RunSessionItem(
                         session = session,
+                        isEditMode = isEditMode,
                         onClick = { onSessionClick(session.id) },
                         onDelete = { viewModel.deleteSession(session.id) }
                     )
@@ -157,6 +234,7 @@ private fun SummaryItem(label: String, value: String) {
 @Composable
 private fun RunSessionItem(
     session: RunHistory,
+    isEditMode: Boolean,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -175,6 +253,25 @@ private fun RunSessionItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Delete button (edit mode)
+            AnimatedVisibility(
+                visible = isEditMode,
+                enter = fadeIn() + slideInHorizontally(),
+                exit = fadeOut() + slideOutHorizontally()
+            ) {
+                TextButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Text(
+                        text = "X",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
+
             // Date circle
             Box(
                 modifier = Modifier
@@ -243,18 +340,6 @@ private fun RunSessionItem(
                     text = "km",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            TextButton(
-                onClick = onDelete,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Text(
-                    text = "X",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             }
         }
