@@ -1,8 +1,10 @@
 package com.example.history
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
@@ -196,12 +198,22 @@ fun HistoryListScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(sessions, key = { it.id }) { session ->
-                    RunSessionItem(
-                        session = session,
-                        isEditMode = isEditMode,
-                        onClick = { onSessionClick(session.id) },
-                        onDelete = { viewModel.deleteSession(session.id) }
-                    )
+                    var visible by remember { mutableStateOf(true) }
+
+                    AnimatedVisibility(
+                        visible = visible,
+                        exit = shrinkVertically(tween(300)) + fadeOut(tween(200))
+                    ) {
+                        RunSessionItem(
+                            session = session,
+                            isEditMode = isEditMode,
+                            onClick = { onSessionClick(session.id) },
+                            onDelete = {
+                                visible = false
+                                viewModel.deleteSession(session.id)
+                            }
+                        )
+                    }
                 }
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -253,25 +265,6 @@ private fun RunSessionItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Delete button (edit mode)
-            AnimatedVisibility(
-                visible = isEditMode,
-                enter = fadeIn() + slideInHorizontally(),
-                exit = fadeOut() + slideOutHorizontally()
-            ) {
-                TextButton(
-                    onClick = onDelete,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Text(
-                        text = "X",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
-                }
-            }
-
             // Date circle
             Box(
                 modifier = Modifier
@@ -341,6 +334,30 @@ private fun RunSessionItem(
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+
+            // Delete button (edit mode) - right side
+            AnimatedVisibility(
+                visible = isEditMode,
+                enter = fadeIn(tween(200)) + slideInHorizontally { it },
+                exit = fadeOut(tween(200)) + slideOutHorizontally { it }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(start = 12.dp)
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.tertiary)
+                        .clickable(onClick = onDelete),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "\u2715",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
             }
         }
     }
