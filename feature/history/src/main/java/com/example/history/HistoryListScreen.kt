@@ -28,7 +28,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,7 +57,7 @@ fun HistoryListScreen(
             text = "Activity",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -89,7 +88,7 @@ fun HistoryListScreen(
             text = "Recent Runs",
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color.White.copy(alpha = 0.8f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -106,13 +105,13 @@ fun HistoryListScreen(
                         text = "No runs yet",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.4f)
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Start your first run!",
                         fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.3f)
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
                     )
                 }
             }
@@ -211,7 +210,7 @@ private fun RunSessionItem(
                     text = "Run - ${timeFormat.format(Date(session.startTime))}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row {
@@ -238,7 +237,7 @@ private fun RunSessionItem(
                     text = String.format("%.2f", session.distanceMeters / 1000.0),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = "km",

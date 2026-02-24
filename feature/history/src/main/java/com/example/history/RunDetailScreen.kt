@@ -112,7 +112,7 @@ fun RunDetailScreen(
                             text = dateFormat.format(Date(session.startTime)),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
                             text = timeFormat.format(Date(session.startTime)),
@@ -133,7 +133,7 @@ fun RunDetailScreen(
                         text = String.format("%.2f", session.distanceMeters / 1000.0),
                         fontSize = 72.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
                         text = "kilometers",
@@ -236,7 +236,7 @@ fun RunDetailScreen(
             ) {
                 Text(
                     text = "Session not found",
-                    color = Color.White.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                     fontSize = 18.sp
                 )
             }
@@ -314,7 +314,7 @@ private fun DetailStatCard(
     label: String,
     value: String,
     unit: String? = null,
-    valueColor: Color = Color.White
+    valueColor: Color = MaterialTheme.colorScheme.onBackground
 ) {
     Card(
         modifier = modifier,

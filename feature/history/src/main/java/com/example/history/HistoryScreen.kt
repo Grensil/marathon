@@ -143,7 +143,7 @@ private fun IdleModeScreen(state: RunningState, viewModel: RunningViewModel) {
             text = "Ready to Run",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(modifier = Modifier.height(48.dp))
@@ -153,12 +153,12 @@ private fun IdleModeScreen(state: RunningState, viewModel: RunningViewModel) {
             text = "0.00",
             fontSize = 80.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White.copy(alpha = 0.3f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
         )
         Text(
             text = "km",
             fontSize = 20.sp,
-            color = Color.White.copy(alpha = 0.3f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
             fontWeight = FontWeight.Medium
         )
 
@@ -244,7 +244,7 @@ private fun RunningModeScreen(state: RunningState, viewModel: RunningViewModel) 
             text = viewModel.formatElapsedTime(state.elapsedTime),
             fontSize = 24.sp,
             fontWeight = FontWeight.Medium,
-            color = Color.White.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -254,12 +254,12 @@ private fun RunningModeScreen(state: RunningState, viewModel: RunningViewModel) 
             text = viewModel.formatDistance(state.distance),
             fontSize = 96.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onBackground
         )
         Text(
             text = "km",
             fontSize = 20.sp,
-            color = Color.White.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             fontWeight = FontWeight.Medium
         )
 
@@ -351,7 +351,7 @@ private fun RunningModeScreen(state: RunningState, viewModel: RunningViewModel) 
                         text = "STOP",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
 
@@ -390,14 +390,14 @@ private fun RunningModeScreen(state: RunningState, viewModel: RunningViewModel) 
                     if (state.isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                     } else {
                         Text(
                             text = "PAUSE",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 }
@@ -453,7 +453,7 @@ private fun MetricCard(
                     text = value,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
-                    color = accentColor ?: Color.White
+                    color = accentColor ?: MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
@@ -502,7 +502,7 @@ private fun CompletionDialog(
                     text = formatDistance(record.distance),
                     fontSize = 56.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = "km",
@@ -564,7 +564,7 @@ private fun StatItem(label: String, value: String) {
             text = value,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
     }
