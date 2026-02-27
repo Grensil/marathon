@@ -126,16 +126,20 @@ class RunningService : Service() {
             }
             ACTION_PAUSE -> {
                 ttsManager?.announcePause()
+                val notification = createNotification("Paused", "--:--", "--:--")
+                startForeground(NOTIFICATION_ID, notification)
             }
             ACTION_RESUME -> {
                 ttsManager?.announceResume()
+                // Update with last known or placeholder to bring it back
+                val notification = createNotification("Resuming...", "--:--", "--:--")
+                startForeground(NOTIFICATION_ID, notification)
             }
             ACTION_UPDATE -> {
                 val distance = intent.getStringExtra(EXTRA_DISTANCE) ?: "0.00 km"
                 val time = intent.getStringExtra(EXTRA_TIME) ?: "00:00"
                 val pace = intent.getStringExtra(EXTRA_PACE) ?: "--:--"
-                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                notificationManager.notify(NOTIFICATION_ID, createNotification(distance, time, pace))
+                startForeground(NOTIFICATION_ID, createNotification(distance, time, pace))
             }
             ACTION_TTS_KILOMETER -> {
                 val km = intent.getIntExtra(EXTRA_KM, 0)
