@@ -51,6 +51,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.healthcare.domain.model.RunHistory
+
 @Composable
 fun RunDetailScreen(
     sessionId: String,
@@ -63,6 +66,17 @@ fun RunDetailScreen(
         viewModel.loadSession(sessionId)
     }
 
+    RunDetailContent(
+        state = state,
+        onBack = onBack
+    )
+}
+
+@Composable
+fun RunDetailContent(
+    state: RunDetailState,
+    onBack: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -241,6 +255,34 @@ fun RunDetailScreen(
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RunDetailPreview() {
+    val dummySession = RunHistory(
+        id = "1",
+        startTime = System.currentTimeMillis(),
+        durationMs = 3600000,
+        distanceMeters = 10000.0,
+        averagePace = "06:00",
+        averageHeartRate = 150,
+        averageCadence = 180,
+        calories = 600,
+        totalSteps = 10000
+    )
+    val dummyState = RunDetailState(
+        session = dummySession,
+        locationPoints = emptyList(), // Maps might crash in preview
+        isLoading = false
+    )
+
+    MaterialTheme {
+        RunDetailContent(
+            state = dummyState,
+            onBack = {}
+        )
     }
 }
 

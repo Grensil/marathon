@@ -49,6 +49,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import androidx.compose.ui.tooling.preview.Preview
+
 @Composable
 fun HistoryListScreen(
     onSessionClick: (String) -> Unit,
@@ -58,6 +60,25 @@ fun HistoryListScreen(
     val stats by viewModel.stats.collectAsState()
     val sortOrder by viewModel.sortOrder.collectAsState()
 
+    HistoryListContent(
+        sessions = sessions,
+        stats = stats,
+        sortOrder = sortOrder,
+        onSessionClick = onSessionClick,
+        onSortOrderChange = viewModel::setSortOrder,
+        onDeleteSession = viewModel::deleteSession
+    )
+}
+
+@Composable
+fun HistoryListContent(
+    sessions: List<RunHistory>,
+    stats: RunStats,
+    sortOrder: SortOrder,
+    onSessionClick: (String) -> Unit,
+    onSortOrderChange: (SortOrder) -> Unit,
+    onDeleteSession: (String) -> Unit
+) {
     var isEditMode by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
 
@@ -159,7 +180,7 @@ fun HistoryListScreen(
                                     )
                                 },
                                 onClick = {
-                                    viewModel.setSortOrder(order)
+                                    onSortOrderChange(order)
                                     showSortMenu = false
                                 }
                             )
@@ -210,7 +231,7 @@ fun HistoryListScreen(
                             onClick = { onSessionClick(session.id) },
                             onDelete = {
                                 visible = false
-                                viewModel.deleteSession(session.id)
+                                onDeleteSession(session.id)
                             }
                         )
                     }
@@ -220,6 +241,43 @@ fun HistoryListScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HistoryListPreview() {
+    val dummySessions = listOf(
+        RunHistory(
+            id = "1",
+            startTime = System.currentTimeMillis(),
+            durationMs = 3600000,
+            distanceMeters = 10000.0,
+            averagePace = "06:00"
+        ),
+        RunHistory(
+            id = "2",
+            startTime = System.currentTimeMillis() - 86400000,
+            durationMs = 1800000,
+            distanceMeters = 5000.0,
+            averagePace = "06:00"
+        )
+    )
+    val dummyStats = RunStats(
+        totalRuns = 2,
+        totalDistanceKm = 15.0,
+        totalDurationMs = 5400000
+    )
+
+    MaterialTheme {
+        HistoryListContent(
+            sessions = dummySessions,
+            stats = dummyStats,
+            sortOrder = SortOrder.RECENT,
+            onSessionClick = {},
+            onSortOrderChange = {},
+            onDeleteSession = {}
+        )
     }
 }
 

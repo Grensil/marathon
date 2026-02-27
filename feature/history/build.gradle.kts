@@ -67,6 +67,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
+    // Compose Tooling
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui.tooling.preview)
+    debugImplementation(libs.androidx.ui.tooling)
+
     // Google Maps Compose
     implementation(libs.maps.compose)
     implementation(libs.play.services.maps)

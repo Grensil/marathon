@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
@@ -99,9 +100,19 @@ fun HistoryScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         if (state.isRunning || state.isPaused) {
-            RunningModeScreen(state = state, viewModel = viewModel)
+            RunningModeScreen(
+                state = state,
+                formatElapsedTime = viewModel::formatElapsedTime,
+                formatDistance = viewModel::formatDistance,
+                onPauseClick = viewModel::pauseRunning,
+                onResumeClick = viewModel::resumeRunning,
+                onStopClick = viewModel::stopRunning
+            )
         } else {
-            IdleModeScreen(state = state, viewModel = viewModel)
+            IdleModeScreen(
+                state = state,
+                onStartClick = viewModel::startRunning
+            )
         }
 
         // Completion Dialog
@@ -119,7 +130,10 @@ fun HistoryScreen(
 }
 
 @Composable
-private fun IdleModeScreen(state: RunningState, viewModel: RunningViewModel) {
+private fun IdleModeScreen(
+    state: RunningState,
+    onStartClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -166,7 +180,7 @@ private fun IdleModeScreen(state: RunningState, viewModel: RunningViewModel) {
 
         // START button
         Button(
-            onClick = { viewModel.startRunning() },
+            onClick = onStartClick,
             modifier = Modifier
                 .size(140.dp)
                 .clip(CircleShape),
@@ -203,7 +217,14 @@ private fun IdleModeScreen(state: RunningState, viewModel: RunningViewModel) {
 }
 
 @Composable
-private fun RunningModeScreen(state: RunningState, viewModel: RunningViewModel) {
+private fun RunningModeScreen(
+    state: RunningState,
+    formatElapsedTime: (Long) -> String,
+    formatDistance: (Double) -> String,
+    onPauseClick: () -> Unit,
+    onResumeClick: () -> Unit,
+    onStopClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -241,7 +262,7 @@ private fun RunningModeScreen(state: RunningState, viewModel: RunningViewModel) 
 
         // Elapsed Time
         Text(
-            text = viewModel.formatElapsedTime(state.elapsedTime),
+            text = formatElapsedTime(state.elapsedTime),
             fontSize = 24.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
@@ -251,7 +272,7 @@ private fun RunningModeScreen(state: RunningState, viewModel: RunningViewModel) 
 
         // Distance - main focus (like NRC)
         Text(
-            text = viewModel.formatDistance(state.distance),
+            text = formatDistance(state.distance),
             fontSize = 96.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
@@ -338,7 +359,7 @@ private fun RunningModeScreen(state: RunningState, viewModel: RunningViewModel) 
             if (state.isPaused) {
                 // STOP button
                 Button(
-                    onClick = { viewModel.stopRunning() },
+                    onClick = onStopClick,
                     modifier = Modifier
                         .size(80.dp)
                         .clip(CircleShape),
@@ -359,7 +380,7 @@ private fun RunningModeScreen(state: RunningState, viewModel: RunningViewModel) 
 
                 // RESUME button
                 Button(
-                    onClick = { viewModel.resumeRunning() },
+                    onClick = onResumeClick,
                     modifier = Modifier
                         .size(100.dp)
                         .clip(CircleShape),
@@ -378,7 +399,7 @@ private fun RunningModeScreen(state: RunningState, viewModel: RunningViewModel) 
             } else {
                 // PAUSE button
                 Button(
-                    onClick = { viewModel.pauseRunning() },
+                    onClick = onPauseClick,
                     modifier = Modifier
                         .size(100.dp)
                         .clip(CircleShape),
@@ -413,6 +434,42 @@ private fun RunningModeScreen(state: RunningState, viewModel: RunningViewModel) 
                 style = MaterialTheme.typography.bodySmall
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun IdleModePreview() {
+    MaterialTheme {
+        IdleModeScreen(
+            state = RunningState(hasPermissions = true),
+            onStartClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RunningModePreview() {
+    MaterialTheme {
+        RunningModeScreen(
+            state = RunningState(
+                isRunning = true,
+                elapsedTime = 125000L,
+                distance = 1500.0,
+                currentPace = "05:30",
+                averagePace = "05:45",
+                currentHeartRate = 145,
+                currentCadence = 175,
+                currentAltitude = 45.0,
+                calories = 120
+            ),
+            formatElapsedTime = { "02:05" },
+            formatDistance = { "1.50" },
+            onPauseClick = {},
+            onResumeClick = {},
+            onStopClick = {}
+        )
     }
 }
 
