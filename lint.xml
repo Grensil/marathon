@@ -24,6 +24,19 @@
     <!-- Accessibility -->
     <issue id="ContentDescription" severity="warning" />
 
+    <!-- Compose Preview -->
+    <issue id="ComposePreviewDimensionRespectsLimit" severity="error" />
+    <issue id="ComposePreviewMustBeTopLevelFunction" severity="error" />
+    <issue id="ComposePreviewNeedsComposableAnnotation" severity="error" />
+    <issue id="ComposePreviewNotSupportedInUnitTestFiles" severity="error" />
+    <issue id="PreviewAnnotationInFunctionWithParameters" severity="error" />
+    <issue id="PreviewApiLevelMustBeValid" severity="error" />
+    <issue id="PreviewDeviceShouldUseNewSpec" severity="warning" />
+    <issue id="PreviewFontScaleMustBeGreaterThanZero" severity="error" />
+    <issue id="PreviewMultipleParameterProviders" severity="error" />
+    <issue id="PreviewParameterProviderOnFirstParameter" severity="error" />
+    <issue id="PreviewPickerAnnotation" severity="error" />
+
     <!-- Internationalization -->
     <issue id="HardcodedText" severity="informational" />
 
