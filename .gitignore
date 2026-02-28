@@ -13,3 +13,16 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Security - signing keys
+*.jks
+*.keystore
+*.pem
+*.key
+signing/
+
+# Security - environment & config
+.env
+.env.*
+google-services.json
+replace_expressions.txt

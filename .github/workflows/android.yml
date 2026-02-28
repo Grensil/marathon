@@ -31,6 +31,9 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Run Lint
+        run: ./gradlew lint
+
       - name: Run Unit Tests
         run: ./gradlew test
 
@@ -40,6 +43,13 @@ jobs:
         with:
           name: test-reports
           path: '**/build/reports/tests/'
+
+      - name: Upload Lint Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-reports
+          path: '**/build/reports/lint-results-*'
 
   build:
     name: Build APK
