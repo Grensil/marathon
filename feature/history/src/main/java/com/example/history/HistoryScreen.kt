@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -231,55 +233,63 @@ private fun RunningModeScreen(
     ) {
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Status indicator
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        // Status indicator - pill/chip style
+        val statusColor = if (state.isPaused) MaterialTheme.colorScheme.secondary
+            else MaterialTheme.colorScheme.primary
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .background(statusColor.copy(alpha = 0.15f))
+                .padding(horizontal = 16.dp, vertical = 6.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (state.isPaused) MaterialTheme.colorScheme.secondary
-                        else MaterialTheme.colorScheme.primary
-                    )
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = if (state.isPaused) "PAUSED" else "RUNNING",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (state.isPaused) MaterialTheme.colorScheme.secondary
-                else MaterialTheme.colorScheme.primary,
-                letterSpacing = 3.sp
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(statusColor)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (state.isPaused) "PAUSED" else "RUNNING",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = statusColor,
+                    letterSpacing = 2.sp
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Elapsed Time
         Text(
             text = formatElapsedTime(state.elapsedTime),
-            fontSize = 24.sp,
+            fontSize = 22.sp,
             fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            letterSpacing = 1.sp
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
-        // Distance - main focus (like NRC)
+        // Distance - main focus
         Text(
             text = formatDistance(state.distance),
             fontSize = 96.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onBackground,
+            lineHeight = 96.sp
         )
         Text(
             text = "km",
-            fontSize = 20.sp,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-            fontWeight = FontWeight.Medium
+            fontSize = 18.sp,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 2.sp
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -355,22 +365,22 @@ private fun RunningModeScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (state.isPaused) {
-                // STOP button
-                Button(
+                // STOP button - outlined for clear distinction
+                OutlinedButton(
                     onClick = onStopClick,
                     modifier = Modifier
                         .size(80.dp)
                         .clip(CircleShape),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.tertiary
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.tertiary),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.tertiary
                     ),
                     enabled = !state.isLoading
                 ) {
                     Text(
                         text = "STOP",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                        fontWeight = FontWeight.Bold
                     )
                 }
 
@@ -423,7 +433,7 @@ private fun RunningModeScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         state.error?.let { error ->
             Text(
@@ -479,6 +489,9 @@ private fun MetricCard(
     unit: String,
     accentColor: Color? = null
 ) {
+    val isPlaceholder = value == "--:--" || value == "--" || value == "0"
+    val valueAlpha = if (isPlaceholder) 0.35f else 1f
+
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
@@ -508,7 +521,8 @@ private fun MetricCard(
                     text = value,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
-                    color = accentColor ?: MaterialTheme.colorScheme.onBackground
+                    color = (accentColor ?: MaterialTheme.colorScheme.onBackground)
+                        .copy(alpha = valueAlpha)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
@@ -532,6 +546,7 @@ private fun CompletionDialog(
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(24.dp),
         title = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -540,8 +555,9 @@ private fun CompletionDialog(
                 Text(
                     text = "Run Complete!",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp,
-                    color = MaterialTheme.colorScheme.primary
+                    fontSize = 22.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    letterSpacing = 1.sp
                 )
             }
         },
@@ -561,8 +577,10 @@ private fun CompletionDialog(
                 )
                 Text(
                     text = "km",
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 2.sp
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -578,11 +596,13 @@ private fun CompletionDialog(
                     )
                     StatItem(
                         label = "Avg Pace",
-                        value = "${record.averagePace}\nmin/km"
+                        value = record.averagePace,
+                        subValue = "min/km"
                     )
                     StatItem(
                         label = "Cadence",
-                        value = record.averageCadence?.let { "$it\nspm" } ?: "--"
+                        value = record.averageCadence?.toString() ?: "--",
+                        subValue = if (record.averageCadence != null) "spm" else null
                     )
                 }
             }
@@ -590,6 +610,8 @@ private fun CompletionDialog(
         confirmButton = {
             Button(
                 onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
@@ -597,7 +619,9 @@ private fun CompletionDialog(
                 Text(
                     "DONE",
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
         }
@@ -605,7 +629,7 @@ private fun CompletionDialog(
 }
 
 @Composable
-private fun StatItem(label: String, value: String) {
+private fun StatItem(label: String, value: String, subValue: String? = null) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = label.uppercase(),
@@ -617,10 +641,18 @@ private fun StatItem(label: String, value: String) {
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = value,
-            fontSize = 16.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
+        if (subValue != null) {
+            Text(
+                text = subValue,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }

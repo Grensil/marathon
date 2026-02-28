@@ -24,8 +24,8 @@ data class RunningState(
     val sessionId: String? = null,
     val elapsedTime: Long = 0L, // milliseconds
     val distance: Double = 0.0, // meters
-    val currentPace: String = "00:00", // min/km
-    val averagePace: String = "00:00", // min/km
+    val currentPace: String = "--:--", // min/km
+    val averagePace: String = "--:--", // min/km
     val currentHeartRate: Int? = null,
     val averageHeartRate: Int? = null,
     val currentCadence: Int? = null,
