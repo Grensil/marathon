@@ -14,7 +14,7 @@ jobs:
 
       - name: Sync Notion QA Issues
         env:
-          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_API_KEY: ${{ secrets.NOTION }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NOTION_DB_ID: "05edabfb94dd45e29c10c86f6a559d93"
         run: |
