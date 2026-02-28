@@ -5,6 +5,9 @@ on:
     - cron: '*/3 * * * *'
   workflow_dispatch:
 
+permissions:
+  issues: write
+
 jobs:
   sync:
     name: Sync Notion Issues to GitHub
