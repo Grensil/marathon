@@ -58,7 +58,7 @@ class RunningViewModelLogicTest {
     // ==========================================
 
     private fun formatPace(paceInMinutesPerKm: Double): String {
-        if (paceInMinutesPerKm > 30 || paceInMinutesPerKm < 0) return "00:00"
+        if (paceInMinutesPerKm > 30 || paceInMinutesPerKm < 0) return "--:--"
         val minutes = paceInMinutesPerKm.toInt()
         val seconds = ((paceInMinutesPerKm - minutes) * 60).toInt()
         return String.format("%d:%02d", minutes, seconds)
@@ -87,12 +87,12 @@ class RunningViewModelLogicTest {
 
     @Test
     fun `formatPace - 30분 초과시 대시 반환`() {
-        assertEquals("00:00", formatPace(31.0))
+        assertEquals("--:--", formatPace(31.0))
     }
 
     @Test
     fun `formatPace - 음수시 대시 반환`() {
-        assertEquals("00:00", formatPace(-1.0))
+        assertEquals("--:--", formatPace(-1.0))
     }
 
     // ==========================================
