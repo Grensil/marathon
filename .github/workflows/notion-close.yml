@@ -1,0 +1,21 @@
+name: Notion Issue Auto-Close
+
+on:
+  issues:
+    types: [closed]
+
+jobs:
+  close:
+    name: Close Notion Issue
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Close Notion Issue
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION }}
+          NOTION_DB_ID: "05edabfb94dd45e29c10c86f6a559d93"
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: |
+          chmod +x .github/scripts/close-notion-issue.sh
+          .github/scripts/close-notion-issue.sh
