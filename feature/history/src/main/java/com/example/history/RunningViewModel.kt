@@ -138,8 +138,8 @@ class RunningViewModel @Inject constructor(
                         isLoading = false,
                         elapsedTime = 0L,
                         distance = 0.0,
-                        currentPace = "00:00",
-                        averagePace = "00:00",
+                        currentPace = "--:--",
+                        averagePace = "--:--",
                         currentHeartRate = null,
                         averageHeartRate = null,
                         currentCadence = null,
@@ -320,11 +320,11 @@ class RunningViewModel @Inject constructor(
                         locationPointIndex++
                     }
 
-                    val currentPace = metrics.pace?.let { formatPace(it) } ?: "00:00"
+                    val currentPace = metrics.pace?.let { formatPace(it) } ?: "--:--"
                     val currentDistance = metrics.distance ?: 0.0
                     val avgPace = if (paceList.isNotEmpty() && currentDistance > 50.0) {
                         formatPace(paceList.average())
-                    } else "00:00"
+                    } else "--:--"
                     val avgCadence = if (cadenceList.isNotEmpty()) {
                         cadenceList.average().toInt()
                     } else null
@@ -381,7 +381,7 @@ class RunningViewModel @Inject constructor(
     }
 
     private fun formatPace(paceInMinutesPerKm: Double): String {
-        if (paceInMinutesPerKm > 30 || paceInMinutesPerKm < 0) return "00:00"
+        if (paceInMinutesPerKm > 30 || paceInMinutesPerKm < 0) return "--:--"
         val minutes = paceInMinutesPerKm.toInt()
         val seconds = ((paceInMinutesPerKm - minutes) * 60).toInt()
         return String.format("%d:%02d", minutes, seconds)
