@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.healthcare.domain.model.RunHistory
 import com.example.healthcare.domain.repository.RunHistoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -46,15 +48,19 @@ class HistoryListViewModel @Inject constructor(
 
     private fun loadSessions() {
         viewModelScope.launch {
-            runHistoryRepository.getAllSessions().collect { sessionList ->
-                rawSessions = sessionList
-                _stats.value = RunStats(
-                    totalRuns = sessionList.size,
-                    totalDistanceKm = sessionList.sumOf { it.distanceMeters } / 1000.0,
-                    totalDurationMs = sessionList.sumOf { it.durationMs }
-                )
-                applySortOrder()
-            }
+            runHistoryRepository.getAllSessions()
+                .catch { e ->
+                    Log.e(TAG, "세션 목록 로딩 실패", e)
+                }
+                .collect { sessionList ->
+                    rawSessions = sessionList
+                    _stats.value = RunStats(
+                        totalRuns = sessionList.size,
+                        totalDistanceKm = sessionList.sumOf { it.distanceMeters } / 1000.0,
+                        totalDurationMs = sessionList.sumOf { it.durationMs }
+                    )
+                    applySortOrder()
+                }
         }
     }
 
@@ -83,7 +89,15 @@ class HistoryListViewModel @Inject constructor(
 
     fun deleteSession(sessionId: String) {
         viewModelScope.launch {
-            runHistoryRepository.deleteSession(sessionId)
+            try {
+                runHistoryRepository.deleteSession(sessionId)
+            } catch (e: Exception) {
+                Log.e(TAG, "세션 삭제 실패: $sessionId", e)
+            }
         }
+    }
+
+    companion object {
+        private const val TAG = "HistoryListViewModel"
     }
 }
