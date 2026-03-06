@@ -1,5 +1,10 @@
 package com.example.history
 
+import androidx.compose.runtime.Immutable
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+
+@Immutable
 data class RunningRecord(
     val sessionId: String,
     val timestamp: Long,
@@ -11,6 +16,7 @@ data class RunningRecord(
     val calories: Int = 0
 )
 
+@Immutable
 data class LocationPoint(
     val latitude: Double,
     val longitude: Double,
@@ -18,6 +24,7 @@ data class LocationPoint(
     val timestamp: Long = 0L
 )
 
+@Immutable
 data class RunningState(
     val isRunning: Boolean = false,
     val isPaused: Boolean = false,
@@ -37,8 +44,8 @@ data class RunningState(
     val error: String? = null,
     val showCompletionDialog: Boolean = false,
     val completedRecord: RunningRecord? = null,
-    val records: List<RunningRecord> = emptyList(),
+    val records: ImmutableList<RunningRecord> = persistentListOf(),
     val currentLatitude: Double? = null,
     val currentLongitude: Double? = null,
-    val routePoints: List<LocationPoint> = emptyList()
+    val routePoints: ImmutableList<LocationPoint> = persistentListOf()
 )
