@@ -10,6 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +21,8 @@ import javax.inject.Inject
 data class RunDetailState(
     val session: RunHistory? = null,
     val locationPoints: ImmutableList<RoutePoint> = persistentListOf(),
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val error: String? = null
 )
 
 @HiltViewModel
@@ -35,14 +37,22 @@ class RunDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = RunDetailState(isLoading = true)
 
-            val session = runHistoryRepository.getSessionById(sessionId)
-            val locationPoints = runHistoryRepository.getLocationPoints(sessionId)
+            try {
+                // 병렬로 세션과 경로 데이터를 동시 로딩
+                val sessionDeferred = async { runHistoryRepository.getSessionById(sessionId) }
+                val locationDeferred = async { runHistoryRepository.getLocationPoints(sessionId) }
 
-            _state.value = RunDetailState(
-                session = session,
-                locationPoints = locationPoints.toImmutableList(),
-                isLoading = false
-            )
+                _state.value = RunDetailState(
+                    session = sessionDeferred.await(),
+                    locationPoints = locationDeferred.await().toImmutableList(),
+                    isLoading = false
+                )
+            } catch (e: Exception) {
+                _state.value = RunDetailState(
+                    isLoading = false,
+                    error = e.message ?: "데이터를 불러오는데 실패했습니다"
+                )
+            }
         }
     }
 }

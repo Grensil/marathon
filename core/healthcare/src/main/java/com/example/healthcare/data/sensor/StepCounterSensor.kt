@@ -14,6 +14,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -82,7 +83,7 @@ class StepCounterSensor @Inject constructor(
 
         // 주기적 업데이트 (센서 지연 대비)
         launch {
-            while (true) {
+            while (isActive) {
                 delay(2000)
                 trySend(sessionSteps)
             }
