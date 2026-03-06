@@ -67,6 +67,10 @@ android {
     }
 }
 
+composeCompiler {
+    stabilityConfigurationFile = rootProject.layout.projectDirectory.file("compose-stability.conf")
+}
+
 dependencies {
 
     implementation(project(":feature:history"))

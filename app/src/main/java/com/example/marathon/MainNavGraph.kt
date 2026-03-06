@@ -15,6 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -53,10 +54,12 @@ fun MainScreen() {
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 0.dp
                 ) {
-                    val items = listOf(
-                        BottomNavItem(MainRoute.Run.path, "Run", R.drawable.icon_run),
-                        BottomNavItem(MainRoute.HistoryList.path, "History", R.drawable.icon_history),
-                    )
+                    val items = remember {
+                        listOf(
+                            BottomNavItem(MainRoute.Run.path, "Run", R.drawable.icon_run),
+                            BottomNavItem(MainRoute.HistoryList.path, "History", R.drawable.icon_history),
+                        )
+                    }
 
                     items.forEach { item ->
                         val selected = currentRoute == item.route
@@ -122,26 +125,29 @@ private data class BottomNavItem(
 fun MainNavGraph(navController: NavHostController) {
     val context = LocalContext.current
 
+    // remember: 람다를 캐싱하여 매 리컴포지션마다 새 객체 생성 방지
+    val onAudioEvent = remember<(AudioEvent) -> Unit>(context) {
+        { event ->
+            when (event) {
+                is AudioEvent.RunStarted -> RunningService.startService(context)
+                is AudioEvent.RunPaused -> RunningService.pauseService(context)
+                is AudioEvent.RunResumed -> RunningService.resumeService(context)
+                is AudioEvent.RunCompleted -> RunningService.stopService(
+                    context, event.distanceKm, event.elapsedTime
+                )
+                is AudioEvent.KilometerReached -> RunningService.announceKilometer(
+                    context, event.km, event.pace, event.elapsedTime
+                )
+            }
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = MainRoute.Run.path
     ) {
         composable(route = MainRoute.Run.path) {
-            HistoryScreen(
-                onAudioEvent = { event ->
-                    when (event) {
-                        is AudioEvent.RunStarted -> RunningService.startService(context)
-                        is AudioEvent.RunPaused -> RunningService.pauseService(context)
-                        is AudioEvent.RunResumed -> RunningService.resumeService(context)
-                        is AudioEvent.RunCompleted -> RunningService.stopService(
-                            context, event.distanceKm, event.elapsedTime
-                        )
-                        is AudioEvent.KilometerReached -> RunningService.announceKilometer(
-                            context, event.km, event.pace, event.elapsedTime
-                        )
-                    }
-                }
-            )
+            HistoryScreen(onAudioEvent = onAudioEvent)
         }
 
         composable(route = MainRoute.HistoryList.path) {
