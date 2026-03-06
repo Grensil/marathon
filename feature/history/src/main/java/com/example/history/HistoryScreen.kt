@@ -30,8 +30,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -94,12 +96,17 @@ fun HistoryScreen(
         }
     }
 
+    // derivedStateOf: state는 매초 바뀌지만, 이 값들은 거의 안 바뀜 → 불필요한 리컴포지션 방지
+    val isInRunningMode by remember { derivedStateOf { state.isRunning || state.isPaused } }
+    val showDialog by remember { derivedStateOf { state.showCompletionDialog } }
+    val completedRecord by remember { derivedStateOf { state.completedRecord } }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        if (state.isRunning || state.isPaused) {
+        if (isInRunningMode) {
             RunningModeScreen(
                 state = state,
                 formatElapsedTime = viewModel::formatElapsedTime,
@@ -116,8 +123,8 @@ fun HistoryScreen(
         }
 
         // Completion Dialog
-        state.completedRecord?.let { record ->
-            if (state.showCompletionDialog) {
+        completedRecord?.let { record ->
+            if (showDialog) {
                 CompletionDialog(
                     record = record,
                     onDismiss = { viewModel.dismissCompletionDialog() },
@@ -294,6 +301,20 @@ private fun RunningModeScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // remember(key): state는 매초 바뀌지만, 각 메트릭은 덜 바뀜 → 불필요한 문자열 변환 방지
+        val heartRateText = remember(state.currentHeartRate) {
+            state.currentHeartRate?.toString() ?: "--"
+        }
+        val cadenceText = remember(state.currentCadence) {
+            state.currentCadence?.toString() ?: "--"
+        }
+        val altitudeText = remember(state.currentAltitude) {
+            state.currentAltitude?.let { String.format("%.0f", it) } ?: "--"
+        }
+        val caloriesText = remember(state.calories) {
+            state.calories.toString()
+        }
+
         // Metrics Grid - 2x2
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -322,14 +343,14 @@ private fun RunningModeScreen(
             MetricCard(
                 modifier = Modifier.weight(1f),
                 label = "Heart Rate",
-                value = state.currentHeartRate?.toString() ?: "--",
+                value = heartRateText,
                 unit = "bpm",
                 accentColor = MaterialTheme.colorScheme.tertiary
             )
             MetricCard(
                 modifier = Modifier.weight(1f),
                 label = "Cadence",
-                value = state.currentCadence?.toString() ?: "--",
+                value = cadenceText,
                 unit = "spm"
             )
         }
@@ -344,13 +365,13 @@ private fun RunningModeScreen(
             MetricCard(
                 modifier = Modifier.weight(1f),
                 label = "Altitude",
-                value = state.currentAltitude?.let { String.format("%.0f", it) } ?: "--",
+                value = altitudeText,
                 unit = "m"
             )
             MetricCard(
                 modifier = Modifier.weight(1f),
                 label = "Calories",
-                value = state.calories.toString(),
+                value = caloriesText,
                 unit = "kcal",
                 accentColor = MaterialTheme.colorScheme.secondary
             )

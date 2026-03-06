@@ -32,11 +32,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,6 +81,9 @@ fun HistoryListContent(
 ) {
     var isEditMode by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
+    val hasNoSessions by remember { derivedStateOf { sessions.isEmpty() } }
+    val totalDistanceFormatted by remember { derivedStateOf { String.format("%.1f", stats.totalDistanceKm) } }
+    val totalTimeFormatted by remember { derivedStateOf { formatTotalTime(stats.totalDurationMs) } }
 
     Column(
         modifier = Modifier
@@ -113,8 +117,8 @@ fun HistoryListContent(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 SummaryItem(label = "Total Runs", value = "${stats.totalRuns}")
-                SummaryItem(label = "Total km", value = String.format("%.1f", stats.totalDistanceKm))
-                SummaryItem(label = "Total Time", value = formatTotalTime(stats.totalDurationMs))
+                SummaryItem(label = "Total km", value = totalDistanceFormatted)
+                SummaryItem(label = "Total Time", value = totalTimeFormatted)
             }
         }
 
@@ -134,7 +138,7 @@ fun HistoryListContent(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            if (sessions.isNotEmpty()) {
+            if (!hasNoSessions) {
                 // Edit button
                 TextButton(onClick = { isEditMode = !isEditMode }) {
                     Text(
@@ -191,7 +195,7 @@ fun HistoryListContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        if (sessions.isEmpty()) {
+        if (hasNoSessions) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -322,6 +326,11 @@ private fun RunSessionItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // remember: SimpleDateFormat 객체 재생성 방지
+            val dateFormat = remember { SimpleDateFormat("dd", Locale.getDefault()) }
+            val monthFormat = remember { SimpleDateFormat("MMM", Locale.getDefault()) }
+            val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+
             // Date circle
             Box(
                 modifier = Modifier
@@ -330,8 +339,6 @@ private fun RunSessionItem(
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                val dateFormat = SimpleDateFormat("dd", Locale.getDefault())
-                val monthFormat = SimpleDateFormat("MMM", Locale.getDefault())
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = dateFormat.format(Date(session.startTime)),
@@ -352,7 +359,6 @@ private fun RunSessionItem(
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
                 Text(
                     text = "Run - ${timeFormat.format(Date(session.startTime))}",
                     fontSize = 16.sp,
