@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -146,7 +148,7 @@ class RunningViewModel @Inject constructor(
                         averageCadence = null,
                         currentAltitude = null,
                         calories = 0,
-                        routePoints = emptyList()
+                        routePoints = persistentListOf()
                     )
                 }
 
@@ -362,7 +364,7 @@ class RunningViewModel @Inject constructor(
                             calories = estimatedCalories,
                             currentLatitude = metrics.latitude,
                             currentLongitude = metrics.longitude,
-                            routePoints = routePoints.toList()
+                            routePoints = routePoints.toImmutableList()
                         )
                     }
                 }

@@ -32,7 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,9 +55,9 @@ fun HistoryListScreen(
     onSessionClick: (String) -> Unit,
     viewModel: HistoryListViewModel = hiltViewModel()
 ) {
-    val sessions by viewModel.sessions.collectAsState()
-    val stats by viewModel.stats.collectAsState()
-    val sortOrder by viewModel.sortOrder.collectAsState()
+    val sessions by viewModel.sessions.collectAsStateWithLifecycle()
+    val stats by viewModel.stats.collectAsStateWithLifecycle()
+    val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
 
     HistoryListContent(
         sessions = sessions,

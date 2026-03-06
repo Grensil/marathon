@@ -23,7 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.healthcare.domain.model.RoutePoint
+import kotlinx.collections.immutable.persistentListOf
 import com.example.healthcare.domain.model.RunHistory
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -59,7 +60,7 @@ fun RunDetailScreen(
     onBack: () -> Unit,
     viewModel: RunDetailViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(sessionId) {
         viewModel.loadSession(sessionId)
@@ -273,7 +274,7 @@ fun RunDetailPreview() {
     )
     val dummyState = RunDetailState(
         session = dummySession,
-        locationPoints = emptyList(), // Maps might crash in preview
+        locationPoints = persistentListOf(), // Maps might crash in preview
         isLoading = false
     )
 

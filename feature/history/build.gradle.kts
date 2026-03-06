@@ -65,7 +65,11 @@ dependencies {
 
     // Lifecycle
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    // Immutable Collections
+    implementation(libs.kotlinx.collections.immutable)
 
     // Compose Tooling
     implementation(platform(libs.androidx.compose.bom))
