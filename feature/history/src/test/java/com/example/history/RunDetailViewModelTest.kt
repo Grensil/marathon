@@ -2,7 +2,8 @@ package com.example.history
 
 import com.example.healthcare.domain.model.RoutePoint
 import com.example.healthcare.domain.model.RunHistory
-import com.example.healthcare.domain.repository.RunHistoryRepository
+import com.example.healthcare.domain.usecase.GetLocationPointsUseCase
+import com.example.healthcare.domain.usecase.GetRunSessionByIdUseCase
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,7 +22,8 @@ class RunDetailViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private lateinit var repository: RunHistoryRepository
+    private lateinit var getRunSessionByIdUseCase: GetRunSessionByIdUseCase
+    private lateinit var getLocationPointsUseCase: GetLocationPointsUseCase
     private lateinit var viewModel: RunDetailViewModel
 
     private val sampleSession = RunHistory(
@@ -37,8 +39,9 @@ class RunDetailViewModelTest {
 
     @Before
     fun setup() {
-        repository = mockk()
-        viewModel = RunDetailViewModel(repository)
+        getRunSessionByIdUseCase = mockk()
+        getLocationPointsUseCase = mockk()
+        viewModel = RunDetailViewModel(getRunSessionByIdUseCase, getLocationPointsUseCase)
     }
 
     @Test
@@ -52,8 +55,8 @@ class RunDetailViewModelTest {
 
     @Test
     fun `loadSession 성공 시 세션과 경로가 로드됨`() = runTest {
-        coEvery { repository.getSessionById("session_123") } returns sampleSession
-        coEvery { repository.getLocationPoints("session_123") } returns sampleRoutePoints
+        coEvery { getRunSessionByIdUseCase("session_123") } returns sampleSession
+        coEvery { getLocationPointsUseCase("session_123") } returns sampleRoutePoints
 
         viewModel.loadSession("session_123")
 
@@ -67,8 +70,8 @@ class RunDetailViewModelTest {
 
     @Test
     fun `존재하지 않는 세션 로딩 시 session이 null`() = runTest {
-        coEvery { repository.getSessionById("unknown") } returns null
-        coEvery { repository.getLocationPoints("unknown") } returns emptyList()
+        coEvery { getRunSessionByIdUseCase("unknown") } returns null
+        coEvery { getLocationPointsUseCase("unknown") } returns emptyList()
 
         viewModel.loadSession("unknown")
 
@@ -80,8 +83,8 @@ class RunDetailViewModelTest {
 
     @Test
     fun `loadSession 실패 시 error 상태가 설정됨`() = runTest {
-        coEvery { repository.getSessionById(any()) } throws RuntimeException("DB error")
-        coEvery { repository.getLocationPoints(any()) } throws RuntimeException("DB error")
+        coEvery { getRunSessionByIdUseCase(any()) } throws RuntimeException("DB error")
+        coEvery { getLocationPointsUseCase(any()) } throws RuntimeException("DB error")
 
         viewModel.loadSession("session_123")
 
@@ -92,8 +95,8 @@ class RunDetailViewModelTest {
 
     @Test
     fun `경로 데이터가 없는 세션도 정상 로딩`() = runTest {
-        coEvery { repository.getSessionById("session_123") } returns sampleSession
-        coEvery { repository.getLocationPoints("session_123") } returns emptyList()
+        coEvery { getRunSessionByIdUseCase("session_123") } returns sampleSession
+        coEvery { getLocationPointsUseCase("session_123") } returns emptyList()
 
         viewModel.loadSession("session_123")
 
