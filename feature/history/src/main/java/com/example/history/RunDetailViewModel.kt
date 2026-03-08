@@ -11,6 +11,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,15 +39,17 @@ class RunDetailViewModel @Inject constructor(
             _state.value = RunDetailState(isLoading = true)
 
             try {
-                // 병렬로 세션과 경로 데이터를 동시 로딩
-                val sessionDeferred = async { runHistoryRepository.getSessionById(sessionId) }
-                val locationDeferred = async { runHistoryRepository.getLocationPoints(sessionId) }
+                // coroutineScope로 감싸서 자식 async 예외를 try/catch로 처리
+                coroutineScope {
+                    val sessionDeferred = async { runHistoryRepository.getSessionById(sessionId) }
+                    val locationDeferred = async { runHistoryRepository.getLocationPoints(sessionId) }
 
-                _state.value = RunDetailState(
-                    session = sessionDeferred.await(),
-                    locationPoints = locationDeferred.await().toImmutableList(),
-                    isLoading = false
-                )
+                    _state.value = RunDetailState(
+                        session = sessionDeferred.await(),
+                        locationPoints = locationDeferred.await().toImmutableList(),
+                        isLoading = false
+                    )
+                }
             } catch (e: Exception) {
                 _state.value = RunDetailState(
                     isLoading = false,
