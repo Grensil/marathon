@@ -3,10 +3,11 @@ package com.example.history
 import androidx.lifecycle.viewModelScope
 import com.example.healthcare.domain.model.RunningMetrics
 import com.example.healthcare.domain.model.RunningSession
-import com.example.healthcare.domain.repository.RunHistoryRepository
 import com.example.healthcare.domain.usecase.CheckHealthConnectPermissionsUseCase
+import com.example.healthcare.domain.usecase.FinalizeRunSessionUseCase
 import com.example.healthcare.domain.usecase.GetActiveSessionUseCase
 import com.example.healthcare.domain.usecase.ObserveRunningMetricsUseCase
+import com.example.healthcare.domain.usecase.SaveRunSessionUseCase
 import com.example.healthcare.domain.usecase.StartRunningSessionUseCase
 import com.example.healthcare.domain.usecase.StopRunningSessionUseCase
 import io.mockk.coEvery
@@ -43,7 +44,8 @@ class RunningViewModelTest {
     private lateinit var observeRunningMetricsUseCase: ObserveRunningMetricsUseCase
     private lateinit var checkHealthConnectPermissionsUseCase: CheckHealthConnectPermissionsUseCase
     private lateinit var getActiveSessionUseCase: GetActiveSessionUseCase
-    private lateinit var runHistoryRepository: RunHistoryRepository
+    private lateinit var saveRunSessionUseCase: SaveRunSessionUseCase
+    private lateinit var finalizeRunSessionUseCase: FinalizeRunSessionUseCase
 
     private lateinit var metricsFlow: MutableSharedFlow<RunningMetrics>
 
@@ -54,7 +56,8 @@ class RunningViewModelTest {
         observeRunningMetricsUseCase = mockk()
         checkHealthConnectPermissionsUseCase = mockk()
         getActiveSessionUseCase = mockk()
-        runHistoryRepository = mockk(relaxed = true)
+        saveRunSessionUseCase = mockk(relaxed = true)
+        finalizeRunSessionUseCase = mockk(relaxed = true)
 
         metricsFlow = MutableSharedFlow()
 
@@ -67,7 +70,7 @@ class RunningViewModelTest {
         return RunningViewModel(
             startRunningSessionUseCase, stopRunningSessionUseCase,
             observeRunningMetricsUseCase, checkHealthConnectPermissionsUseCase,
-            getActiveSessionUseCase, runHistoryRepository
+            getActiveSessionUseCase, saveRunSessionUseCase, finalizeRunSessionUseCase
         )
     }
 
@@ -150,7 +153,7 @@ class RunningViewModelTest {
         advanceTimeBy(100)
         runCurrent()
 
-        coVerify { runHistoryRepository.saveSession(match { it.id == "session_123" }) }
+        coVerify { saveRunSessionUseCase(match { it.id == "session_123" }) }
         vm.viewModelScope.cancel()
     }
 
@@ -301,7 +304,7 @@ class RunningViewModelTest {
         advanceTimeBy(100)
         runCurrent()
 
-        coVerify { runHistoryRepository.updateSession(match { it.id == "session_123" }) }
+        coVerify { finalizeRunSessionUseCase(match { it.id == "session_123" }, any()) }
         vm.viewModelScope.cancel()
     }
 

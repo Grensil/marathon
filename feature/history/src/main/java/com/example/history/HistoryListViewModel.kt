@@ -3,9 +3,13 @@ package com.example.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.healthcare.domain.model.RunHistory
-import com.example.healthcare.domain.repository.RunHistoryRepository
+import com.example.healthcare.domain.usecase.DeleteRunSessionUseCase
+import com.example.healthcare.domain.usecase.GetAllRunSessionsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import android.util.Log
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,11 +32,12 @@ enum class SortOrder(val label: String) {
 
 @HiltViewModel
 class HistoryListViewModel @Inject constructor(
-    private val runHistoryRepository: RunHistoryRepository
+    private val getAllRunSessionsUseCase: GetAllRunSessionsUseCase,
+    private val deleteRunSessionUseCase: DeleteRunSessionUseCase
 ) : ViewModel() {
 
-    private val _sessions = MutableStateFlow<List<RunHistory>>(emptyList())
-    val sessions: StateFlow<List<RunHistory>> = _sessions.asStateFlow()
+    private val _sessions = MutableStateFlow<ImmutableList<RunHistory>>(persistentListOf())
+    val sessions: StateFlow<ImmutableList<RunHistory>> = _sessions.asStateFlow()
 
     private val _stats = MutableStateFlow(RunStats())
     val stats: StateFlow<RunStats> = _stats.asStateFlow()
@@ -40,7 +45,7 @@ class HistoryListViewModel @Inject constructor(
     private val _sortOrder = MutableStateFlow(SortOrder.RECENT)
     val sortOrder: StateFlow<SortOrder> = _sortOrder.asStateFlow()
 
-    private var rawSessions: List<RunHistory> = emptyList()
+    private var rawSessions: ImmutableList<RunHistory> = persistentListOf()
 
     init {
         loadSessions()
@@ -48,12 +53,12 @@ class HistoryListViewModel @Inject constructor(
 
     private fun loadSessions() {
         viewModelScope.launch {
-            runHistoryRepository.getAllSessions()
+            getAllRunSessionsUseCase()
                 .catch { e ->
                     Log.e(TAG, "세션 목록 로딩 실패", e)
                 }
                 .collect { sessionList ->
-                    rawSessions = sessionList
+                    rawSessions = sessionList.toImmutableList()
                     _stats.value = RunStats(
                         totalRuns = sessionList.size,
                         totalDistanceKm = sessionList.sumOf { it.distanceMeters } / 1000.0,
@@ -75,7 +80,7 @@ class HistoryListViewModel @Inject constructor(
             SortOrder.LONGEST_DISTANCE -> rawSessions.sortedByDescending { it.distanceMeters }
             SortOrder.FASTEST_PACE -> rawSessions.sortedBy { parsePaceToSeconds(it.averagePace) }
             SortOrder.LONGEST_DURATION -> rawSessions.sortedByDescending { it.durationMs }
-        }
+        }.toImmutableList()
     }
 
     private fun parsePaceToSeconds(pace: String): Int {
@@ -90,7 +95,7 @@ class HistoryListViewModel @Inject constructor(
     fun deleteSession(sessionId: String) {
         viewModelScope.launch {
             try {
-                runHistoryRepository.deleteSession(sessionId)
+                deleteRunSessionUseCase(sessionId)
             } catch (e: Exception) {
                 Log.e(TAG, "세션 삭제 실패: $sessionId", e)
             }

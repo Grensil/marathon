@@ -15,10 +15,13 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.marathon.MainActivity
 import com.example.marathon.R
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class RunningService : Service() {
 
-    private var ttsManager: RunningTtsManager? = null
+    @Inject lateinit var ttsManager: RunningTtsManager
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
 
     companion object {
@@ -101,36 +104,34 @@ class RunningService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        ttsManager = RunningTtsManager(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
                 startForeground(NOTIFICATION_ID, createNotification("0.00 km", "00:00", "--:--"))
-                ttsManager?.announceRunStart()
+                ttsManager.announceRunStart()
             }
             ACTION_STOP -> {
                 val distanceKm = intent.getStringExtra(EXTRA_DISTANCE) ?: ""
                 val elapsedTime = intent.getStringExtra(EXTRA_TIME) ?: ""
                 if (distanceKm.isNotEmpty() && elapsedTime.isNotEmpty()) {
-                    ttsManager?.announceRunComplete(distanceKm, elapsedTime)
+                    ttsManager.announceRunComplete(distanceKm, elapsedTime)
                 }
                 // Delay stop slightly to allow TTS to finish
                 handler.postDelayed({
-                    ttsManager?.shutdown()
-                    ttsManager = null
+                    ttsManager.shutdown()
                     stopForeground(STOP_FOREGROUND_REMOVE)
                     stopSelf()
                 }, 3000)
             }
             ACTION_PAUSE -> {
-                ttsManager?.announcePause()
+                ttsManager.announcePause()
                 val notification = createNotification("Paused", "--:--", "--:--")
                 startForeground(NOTIFICATION_ID, notification)
             }
             ACTION_RESUME -> {
-                ttsManager?.announceResume()
+                ttsManager.announceResume()
                 // Update with last known or placeholder to bring it back
                 val notification = createNotification("Resuming...", "--:--", "--:--")
                 startForeground(NOTIFICATION_ID, notification)
@@ -146,7 +147,7 @@ class RunningService : Service() {
                 val pace = intent.getStringExtra(EXTRA_PACE) ?: "--:--"
                 val elapsedTime = intent.getStringExtra(EXTRA_TIME) ?: ""
                 if (km > 0) {
-                    ttsManager?.announceKilometer(km, pace, elapsedTime)
+                    ttsManager.announceKilometer(km, pace, elapsedTime)
                 }
             }
         }
@@ -155,8 +156,7 @@ class RunningService : Service() {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
-        ttsManager?.shutdown()
-        ttsManager = null
+        ttsManager.shutdown()
         super.onDestroy()
     }
 
