@@ -34,7 +34,7 @@ import com.example.history.HistoryListScreen
 import com.example.history.HistoryScreen
 import com.example.history.RunDetailScreen
 import com.example.marathon.service.RunningService
-import com.example.recommend.RecommendScreen
+
 
 @Composable
 fun MainScreen() {
@@ -171,8 +171,5 @@ fun MainNavGraph(navController: NavHostController) {
             )
         }
 
-        composable(route = MainRoute.Recommend.path) {
-            RecommendScreen()
-        }
     }
 }

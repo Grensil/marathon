@@ -74,7 +74,7 @@ composeCompiler {
 dependencies {
 
     implementation(project(":feature:history"))
-    implementation(project(":feature:recommend"))
+
     implementation(project(":core:healthcare"))
 
     // Hilt

@@ -2,9 +2,13 @@ package com.example.marathon.service
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
+import javax.inject.Inject
 
-class RunningTtsManager(context: Context) : TextToSpeech.OnInitListener {
+class RunningTtsManager @Inject constructor(
+    @ApplicationContext context: Context
+) : TextToSpeech.OnInitListener {
 
     private var tts: TextToSpeech? = TextToSpeech(context, this)
     private var isReady = false

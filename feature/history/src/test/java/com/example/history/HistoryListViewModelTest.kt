@@ -1,9 +1,10 @@
 package com.example.history
 
 import com.example.healthcare.domain.model.RunHistory
-import com.example.healthcare.domain.repository.RunHistoryRepository
-import io.mockk.coEvery
+import com.example.healthcare.domain.usecase.DeleteRunSessionUseCase
+import com.example.healthcare.domain.usecase.GetAllRunSessionsUseCase
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -19,7 +20,8 @@ class HistoryListViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private lateinit var repository: RunHistoryRepository
+    private lateinit var getAllRunSessionsUseCase: GetAllRunSessionsUseCase
+    private lateinit var deleteRunSessionUseCase: DeleteRunSessionUseCase
     private lateinit var sessionsFlow: MutableSharedFlow<List<RunHistory>>
 
     private val sampleSessions = listOf(
@@ -30,12 +32,13 @@ class HistoryListViewModelTest {
 
     @Before
     fun setup() {
-        repository = mockk(relaxed = true)
+        getAllRunSessionsUseCase = mockk()
+        deleteRunSessionUseCase = mockk(relaxed = true)
         sessionsFlow = MutableSharedFlow()
-        coEvery { repository.getAllSessions() } returns sessionsFlow
+        every { getAllRunSessionsUseCase() } returns sessionsFlow
     }
 
-    private fun createViewModel() = HistoryListViewModel(repository)
+    private fun createViewModel() = HistoryListViewModel(getAllRunSessionsUseCase, deleteRunSessionUseCase)
 
     @Test
     fun `초기 상태에서 sessions는 빈 리스트`() = runTest {
@@ -138,7 +141,7 @@ class HistoryListViewModelTest {
     fun `deleteSession은 repository의 deleteSession을 호출`() = runTest {
         val viewModel = createViewModel()
         viewModel.deleteSession("session_1")
-        coVerify { repository.deleteSession("session_1") }
+        coVerify { deleteRunSessionUseCase("session_1") }
     }
 
     @Test
@@ -149,6 +152,6 @@ class HistoryListViewModelTest {
         viewModel.deleteSession("session_1")
 
         assertEquals(3, viewModel.stats.value.totalRuns)
-        coVerify { repository.deleteSession("session_1") }
+        coVerify { deleteRunSessionUseCase("session_1") }
     }
 }

@@ -6,10 +6,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.healthcare.domain.model.ExerciseType
 import com.example.healthcare.domain.model.RoutePoint
 import com.example.healthcare.domain.model.RunHistory
-import com.example.healthcare.domain.repository.RunHistoryRepository
 import com.example.healthcare.domain.usecase.CheckHealthConnectPermissionsUseCase
+import com.example.healthcare.domain.usecase.FinalizeRunSessionUseCase
 import com.example.healthcare.domain.usecase.GetActiveSessionUseCase
 import com.example.healthcare.domain.usecase.ObserveRunningMetricsUseCase
+import com.example.healthcare.domain.usecase.SaveRunSessionUseCase
 import com.example.healthcare.domain.usecase.StartRunningSessionUseCase
 import com.example.healthcare.domain.usecase.StopRunningSessionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,7 +45,8 @@ class RunningViewModel @Inject constructor(
     private val observeRunningMetricsUseCase: ObserveRunningMetricsUseCase,
     private val checkHealthConnectPermissionsUseCase: CheckHealthConnectPermissionsUseCase,
     private val getActiveSessionUseCase: GetActiveSessionUseCase,
-    private val runHistoryRepository: RunHistoryRepository
+    private val saveRunSessionUseCase: SaveRunSessionUseCase,
+    private val finalizeRunSessionUseCase: FinalizeRunSessionUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RunningState())
@@ -131,7 +133,7 @@ class RunningViewModel @Inject constructor(
                     id = sessionId,
                     startTime = sessionStartTime
                 )
-                runHistoryRepository.saveSession(runHistory)
+                saveRunSessionUseCase(runHistory)
 
                 _state.update {
                     it.copy(
@@ -224,20 +226,16 @@ class RunningViewModel @Inject constructor(
                         maxPace = bestPace?.let { formatPace(it) },
                         totalSteps = totalStepCount
                     )
-                    runHistoryRepository.updateSession(runHistory)
-
-                    if (routePoints.isNotEmpty()) {
-                        val domainPoints = routePoints.mapIndexed { index, point ->
-                            RoutePoint(
-                                latitude = point.latitude,
-                                longitude = point.longitude,
-                                altitude = point.altitude,
-                                timestamp = point.timestamp,
-                                orderIndex = index
-                            )
-                        }
-                        runHistoryRepository.saveLocationPoints(sessionId, domainPoints)
+                    val domainPoints = routePoints.mapIndexed { index, point ->
+                        RoutePoint(
+                            latitude = point.latitude,
+                            longitude = point.longitude,
+                            altitude = point.altitude,
+                            timestamp = point.timestamp,
+                            orderIndex = index
+                        )
                     }
+                    finalizeRunSessionUseCase(runHistory, domainPoints)
 
                     heartRateList.clear()
                     paceList.clear()

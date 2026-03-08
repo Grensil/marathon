@@ -6,5 +6,4 @@ sealed class MainRoute(val path: String) {
     object RunDetail : MainRoute("run_detail/{sessionId}") {
         fun createRoute(sessionId: String) = "run_detail/$sessionId"
     }
-    object Recommend : MainRoute("recommend")
 }
