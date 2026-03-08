@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -151,7 +152,7 @@ private fun IdleModeScreen(
         Spacer(modifier = Modifier.weight(1f))
 
         Text(
-            text = "MARATHON",
+            text = stringResource(R.string.marathon_title),
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
@@ -161,7 +162,7 @@ private fun IdleModeScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Ready to Run",
+            text = stringResource(R.string.ready_to_run),
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
@@ -177,7 +178,7 @@ private fun IdleModeScreen(
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
         )
         Text(
-            text = "km",
+            text = stringResource(R.string.unit_km),
             fontSize = 20.sp,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
             fontWeight = FontWeight.Medium
@@ -203,7 +204,7 @@ private fun IdleModeScreen(
                 )
             } else {
                 Text(
-                    text = "START",
+                    text = stringResource(R.string.start),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onPrimary
@@ -261,7 +262,8 @@ private fun RunningModeScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (state.isPaused) "PAUSED" else "RUNNING",
+                    text = if (state.isPaused) stringResource(R.string.status_paused)
+                           else stringResource(R.string.status_running),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = statusColor,
@@ -292,7 +294,7 @@ private fun RunningModeScreen(
             lineHeight = 96.sp
         )
         Text(
-            text = "km",
+            text = stringResource(R.string.unit_km),
             fontSize = 18.sp,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
             fontWeight = FontWeight.SemiBold,
@@ -322,15 +324,15 @@ private fun RunningModeScreen(
         ) {
             MetricCard(
                 modifier = Modifier.weight(1f),
-                label = "Current Pace",
+                label = stringResource(R.string.label_current_pace),
                 value = state.currentPace,
-                unit = "min/km"
+                unit = stringResource(R.string.unit_min_km)
             )
             MetricCard(
                 modifier = Modifier.weight(1f),
-                label = "Avg Pace",
+                label = stringResource(R.string.label_avg_pace),
                 value = state.averagePace,
-                unit = "min/km"
+                unit = stringResource(R.string.unit_min_km)
             )
         }
 
@@ -342,16 +344,16 @@ private fun RunningModeScreen(
         ) {
             MetricCard(
                 modifier = Modifier.weight(1f),
-                label = "Heart Rate",
+                label = stringResource(R.string.label_heart_rate),
                 value = heartRateText,
-                unit = "bpm",
+                unit = stringResource(R.string.unit_bpm),
                 accentColor = MaterialTheme.colorScheme.tertiary
             )
             MetricCard(
                 modifier = Modifier.weight(1f),
-                label = "Cadence",
+                label = stringResource(R.string.label_cadence),
                 value = cadenceText,
-                unit = "spm"
+                unit = stringResource(R.string.unit_spm)
             )
         }
 
@@ -364,15 +366,15 @@ private fun RunningModeScreen(
         ) {
             MetricCard(
                 modifier = Modifier.weight(1f),
-                label = "Altitude",
+                label = stringResource(R.string.label_altitude),
                 value = altitudeText,
-                unit = "m"
+                unit = stringResource(R.string.unit_m)
             )
             MetricCard(
                 modifier = Modifier.weight(1f),
-                label = "Calories",
+                label = stringResource(R.string.label_calories),
                 value = caloriesText,
-                unit = "kcal",
+                unit = stringResource(R.string.unit_kcal),
                 accentColor = MaterialTheme.colorScheme.secondary
             )
         }
@@ -399,7 +401,7 @@ private fun RunningModeScreen(
                     enabled = !state.isLoading
                 ) {
                     Text(
-                        text = "STOP",
+                        text = stringResource(R.string.action_stop),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -419,7 +421,7 @@ private fun RunningModeScreen(
                     enabled = !state.isLoading
                 ) {
                     Text(
-                        text = "RESUME",
+                        text = stringResource(R.string.action_resume),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary
@@ -444,7 +446,7 @@ private fun RunningModeScreen(
                         )
                     } else {
                         Text(
-                            text = "PAUSE",
+                            text = stringResource(R.string.action_pause),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
@@ -574,7 +576,7 @@ private fun CompletionDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Run Complete!",
+                    text = stringResource(R.string.run_complete),
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp,
                     color = MaterialTheme.colorScheme.primary,
@@ -597,7 +599,7 @@ private fun CompletionDialog(
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "km",
+                    text = stringResource(R.string.unit_km),
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.SemiBold,
@@ -612,18 +614,18 @@ private fun CompletionDialog(
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     StatItem(
-                        label = "Time",
+                        label = stringResource(R.string.label_time),
                         value = formatElapsedTime(record.elapsedTime)
                     )
                     StatItem(
-                        label = "Avg Pace",
+                        label = stringResource(R.string.label_avg_pace),
                         value = record.averagePace,
-                        subValue = "min/km"
+                        subValue = stringResource(R.string.unit_min_km)
                     )
                     StatItem(
-                        label = "Cadence",
+                        label = stringResource(R.string.label_cadence),
                         value = record.averageCadence?.toString() ?: "--",
-                        subValue = if (record.averageCadence != null) "spm" else null
+                        subValue = if (record.averageCadence != null) stringResource(R.string.unit_spm) else null
                     )
                 }
             }
@@ -638,7 +640,7 @@ private fun CompletionDialog(
                 )
             ) {
                 Text(
-                    "DONE",
+                    stringResource(R.string.action_done),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onPrimary,
