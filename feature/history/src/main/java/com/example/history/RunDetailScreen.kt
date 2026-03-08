@@ -90,7 +90,7 @@ fun RunDetailContent(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else if (state.session != null) {
-            val session = state.session!!
+            val session = state.session
 
             Column(
                 modifier = Modifier
@@ -120,8 +120,8 @@ fun RunDetailContent(
                     Spacer(modifier = Modifier.weight(1f))
 
                     Column(horizontalAlignment = Alignment.End) {
-                        val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-                        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+                        val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+                        val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
                         Text(
                             text = dateFormat.format(Date(session.startTime)),
                             fontSize = 16.sp,
@@ -393,16 +393,5 @@ private fun DetailStatCard(
                 else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-    }
-}
-
-private fun formatDuration(ms: Long): String {
-    val seconds = (ms / 1000) % 60
-    val minutes = (ms / (1000 * 60)) % 60
-    val hours = ms / (1000 * 60 * 60)
-    return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format("%02d:%02d", minutes, seconds)
     }
 }

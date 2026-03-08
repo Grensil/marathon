@@ -5,7 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.healthcare.domain.model.RoutePoint
 import com.example.healthcare.domain.model.RunHistory
-import com.example.healthcare.domain.repository.RunHistoryRepository
+import com.example.healthcare.domain.usecase.GetLocationPointsUseCase
+import com.example.healthcare.domain.usecase.GetRunSessionByIdUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -28,7 +29,8 @@ data class RunDetailState(
 
 @HiltViewModel
 class RunDetailViewModel @Inject constructor(
-    private val runHistoryRepository: RunHistoryRepository
+    private val getRunSessionByIdUseCase: GetRunSessionByIdUseCase,
+    private val getLocationPointsUseCase: GetLocationPointsUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RunDetailState())
@@ -39,10 +41,9 @@ class RunDetailViewModel @Inject constructor(
             _state.value = RunDetailState(isLoading = true)
 
             try {
-                // coroutineScope로 감싸서 자식 async 예외를 try/catch로 처리
                 coroutineScope {
-                    val sessionDeferred = async { runHistoryRepository.getSessionById(sessionId) }
-                    val locationDeferred = async { runHistoryRepository.getLocationPoints(sessionId) }
+                    val sessionDeferred = async { getRunSessionByIdUseCase(sessionId) }
+                    val locationDeferred = async { getLocationPointsUseCase(sessionId) }
 
                     _state.value = RunDetailState(
                         session = sessionDeferred.await(),

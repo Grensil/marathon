@@ -2,6 +2,8 @@ package com.example.healthcare.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.healthcare.data.local.MarathonDatabase
 import com.example.healthcare.data.local.dao.RunningSessionDao
 import com.example.healthcare.data.repository.RunHistoryRepositoryImpl
@@ -40,12 +42,17 @@ abstract class HealthcareModule {
         fun provideDatabase(
             @ApplicationContext context: Context
         ): MarathonDatabase {
+            val MIGRATION_1_2 = object : Migration(1, 2) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // Schema v1 → v2: no-op (schema unchanged)
+                }
+            }
             return Room.databaseBuilder(
                 context,
                 MarathonDatabase::class.java,
                 "marathon_database"
             )
-                .fallbackToDestructiveMigration()
+                .addMigrations(MIGRATION_1_2)
                 .build()
         }
 

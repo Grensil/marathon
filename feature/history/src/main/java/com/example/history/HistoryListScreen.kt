@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.healthcare.domain.model.RunHistory
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -72,7 +74,7 @@ fun HistoryListScreen(
 
 @Composable
 fun HistoryListContent(
-    sessions: List<RunHistory>,
+    sessions: ImmutableList<RunHistory>,
     stats: RunStats,
     sortOrder: SortOrder,
     onSessionClick: (String) -> Unit,
@@ -250,7 +252,7 @@ fun HistoryListContent(
 @Preview(showBackground = true)
 @Composable
 fun HistoryListPreview() {
-    val dummySessions = listOf(
+    val dummySessions = persistentListOf(
         RunHistory(
             id = "1",
             startTime = System.currentTimeMillis(),
@@ -423,17 +425,6 @@ private fun RunSessionItem(
                 }
             }
         }
-    }
-}
-
-private fun formatDuration(ms: Long): String {
-    val seconds = (ms / 1000) % 60
-    val minutes = (ms / (1000 * 60)) % 60
-    val hours = ms / (1000 * 60 * 60)
-    return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format("%02d:%02d", minutes, seconds)
     }
 }
 

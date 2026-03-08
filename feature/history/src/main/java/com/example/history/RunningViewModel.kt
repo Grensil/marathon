@@ -65,14 +65,13 @@ class RunningViewModel @Inject constructor(
     private val paceList = mutableListOf<Double>()
     private val cadenceList = mutableListOf<Double>()
     private val routePoints = mutableListOf<LocationPoint>()
-    private var locationPointIndex = 0
     private var lastAnnouncedKm = 0
     private var maxHeartRate: Int? = null
     private var bestPace: Double? = null
     private var totalStepCount: Int = 0
 
     companion object {
-        private const val TAG = "Logd"
+        private const val TAG = "RunningViewModel"
     }
 
     init {
@@ -124,7 +123,6 @@ class RunningViewModel @Inject constructor(
                 paceList.clear()
                 cadenceList.clear()
                 routePoints.clear()
-                locationPointIndex = 0
                 maxHeartRate = null
                 bestPace = null
                 totalStepCount = 0
@@ -133,7 +131,11 @@ class RunningViewModel @Inject constructor(
                     id = sessionId,
                     startTime = sessionStartTime
                 )
-                saveRunSessionUseCase(runHistory)
+                try {
+                    saveRunSessionUseCase(runHistory)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to save initial run session", e)
+                }
 
                 _state.update {
                     it.copy(
@@ -235,7 +237,11 @@ class RunningViewModel @Inject constructor(
                             orderIndex = index
                         )
                     }
-                    finalizeRunSessionUseCase(runHistory, domainPoints)
+                    try {
+                        finalizeRunSessionUseCase(runHistory, domainPoints)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to finalize run session", e)
+                    }
 
                     heartRateList.clear()
                     paceList.clear()
@@ -317,7 +323,6 @@ class RunningViewModel @Inject constructor(
                             timestamp = metrics.timestamp
                         )
                         routePoints.add(point)
-                        locationPointIndex++
                     }
 
                     val currentPace = metrics.pace?.let { formatPace(it) } ?: "--:--"
