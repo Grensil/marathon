@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.healthcare.domain.model.RunHistory
 import com.example.healthcare.domain.usecase.DeleteRunSessionUseCase
 import com.example.healthcare.domain.usecase.GetAllRunSessionsUseCase
+import androidx.annotation.StringRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import android.util.Log
 import kotlinx.collections.immutable.ImmutableList
@@ -23,11 +24,11 @@ data class RunStats(
     val totalDurationMs: Long = 0L
 )
 
-enum class SortOrder(val label: String) {
-    RECENT("Latest"),
-    LONGEST_DISTANCE("Distance"),
-    FASTEST_PACE("Pace"),
-    LONGEST_DURATION("Duration")
+enum class SortOrder(@StringRes val labelRes: Int) {
+    RECENT(R.string.sort_latest),
+    LONGEST_DISTANCE(R.string.sort_distance),
+    FASTEST_PACE(R.string.sort_pace),
+    LONGEST_DURATION(R.string.sort_duration)
 }
 
 @HiltViewModel

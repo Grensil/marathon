@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- HistoryScreen - Idle -->
+    <string name="marathon_title">MARATHON</string>
+    <string name="ready_to_run">Ready to Run</string>
+    <string name="start">START</string>
+
+    <!-- HistoryScreen - Running -->
+    <string name="status_paused">PAUSED</string>
+    <string name="status_running">RUNNING</string>
+    <string name="action_pause">PAUSE</string>
+    <string name="action_stop">STOP</string>
+    <string name="action_resume">RESUME</string>
+
+    <!-- HistoryScreen - Metrics -->
+    <string name="label_current_pace">Current Pace</string>
+    <string name="label_avg_pace">Avg Pace</string>
+    <string name="label_heart_rate">Heart Rate</string>
+    <string name="label_cadence">Cadence</string>
+    <string name="label_altitude">Altitude</string>
+    <string name="label_calories">Calories</string>
+
+    <!-- HistoryScreen - Completion Dialog -->
+    <string name="run_complete">Run Complete!</string>
+    <string name="label_time">Time</string>
+    <string name="action_done">DONE</string>
+
+    <!-- Units -->
+    <string name="unit_km">km</string>
+    <string name="unit_min_km">min/km</string>
+    <string name="unit_bpm">bpm</string>
+    <string name="unit_spm">spm</string>
+    <string name="unit_m">m</string>
+    <string name="unit_kcal">kcal</string>
+    <string name="unit_steps">steps</string>
+    <string name="unit_per_km">/km</string>
+
+    <!-- HistoryListScreen -->
+    <string name="activity_title">Activity</string>
+    <string name="total_runs">Total Runs</string>
+    <string name="total_km">Total km</string>
+    <string name="total_time">Total Time</string>
+    <string name="recent_runs">Recent Runs</string>
+    <string name="edit">Edit</string>
+    <string name="done">Done</string>
+    <string name="no_runs_yet">No runs yet</string>
+    <string name="start_first_run">Start your first run!</string>
+
+    <!-- RunDetailScreen -->
+    <string name="label_kilometers">kilometers</string>
+    <string name="session_not_found">Session not found</string>
+    <string name="label_duration">Duration</string>
+    <string name="label_steps">Steps</string>
+
+    <!-- SortOrder -->
+    <string name="sort_latest">Latest</string>
+    <string name="sort_distance">Distance</string>
+    <string name="sort_pace">Pace</string>
+    <string name="sort_duration">Duration</string>
+
+    <!-- RunSessionItem -->
+    <string name="run_label">Run</string>
+</resources>

@@ -1,5 +1,7 @@
 package com.example.marathon
 
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,15 +57,15 @@ fun MainScreen() {
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 0.dp
                 ) {
-                    val items = remember {
-                        listOf(
-                            BottomNavItem(MainRoute.Run.path, "Run", R.drawable.icon_run),
-                            BottomNavItem(MainRoute.HistoryList.path, "History", R.drawable.icon_history),
-                        )
-                    }
+                    val items = listOf(
+                        BottomNavItem(MainRoute.Run.path, R.string.nav_run, R.drawable.icon_run),
+                        BottomNavItem(MainRoute.HistoryList.path, R.string.nav_history, R.drawable.icon_history),
+                        BottomNavItem(MainRoute.Settings.path, R.string.nav_settings, R.drawable.icon_settings),
+                    )
 
                     items.forEach { item ->
                         val selected = currentRoute == item.route
+                        val label = stringResource(item.labelRes)
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
@@ -79,7 +82,7 @@ fun MainScreen() {
                             icon = {
                                 Icon(
                                     painter = painterResource(item.icon),
-                                    contentDescription = item.label,
+                                    contentDescription = label,
                                     modifier = Modifier.size(24.dp),
                                     tint = if (selected) MaterialTheme.colorScheme.primary
                                     else MaterialTheme.colorScheme.onSurfaceVariant
@@ -87,7 +90,7 @@ fun MainScreen() {
                             },
                             label = {
                                 Text(
-                                    text = item.label,
+                                    text = label,
                                     fontSize = 11.sp,
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                                     color = if (selected) MaterialTheme.colorScheme.primary
@@ -117,8 +120,8 @@ fun MainScreen() {
 
 private data class BottomNavItem(
     val route: String,
-    val label: String,
-    val icon: Int
+    @StringRes val labelRes: Int,
+    @DrawableRes val icon: Int
 )
 
 @Composable
@@ -156,6 +159,10 @@ fun MainNavGraph(navController: NavHostController) {
                     navController.navigate(MainRoute.RunDetail.createRoute(sessionId))
                 }
             )
+        }
+
+        composable(route = MainRoute.Settings.path) {
+            SettingsScreen()
         }
 
         composable(

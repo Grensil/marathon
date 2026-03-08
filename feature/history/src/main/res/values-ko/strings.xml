@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- HistoryScreen - Idle -->
+    <string name="marathon_title">마라톤</string>
+    <string name="ready_to_run">달릴 준비</string>
+    <string name="start">시작</string>
+
+    <!-- HistoryScreen - Running -->
+    <string name="status_paused">일시정지</string>
+    <string name="status_running">달리는 중</string>
+    <string name="action_pause">일시정지</string>
+    <string name="action_stop">중지</string>
+    <string name="action_resume">계속</string>
+
+    <!-- HistoryScreen - Metrics -->
+    <string name="label_current_pace">현재 페이스</string>
+    <string name="label_avg_pace">평균 페이스</string>
+    <string name="label_heart_rate">심박수</string>
+    <string name="label_cadence">케이던스</string>
+    <string name="label_altitude">고도</string>
+    <string name="label_calories">칼로리</string>
+
+    <!-- HistoryScreen - Completion Dialog -->
+    <string name="run_complete">달리기 완료!</string>
+    <string name="label_time">시간</string>
+    <string name="action_done">완료</string>
+
+    <!-- Units -->
+    <string name="unit_km">km</string>
+    <string name="unit_min_km">분/km</string>
+    <string name="unit_bpm">bpm</string>
+    <string name="unit_spm">spm</string>
+    <string name="unit_m">m</string>
+    <string name="unit_kcal">kcal</string>
+    <string name="unit_steps">걸음</string>
+    <string name="unit_per_km">/km</string>
+
+    <!-- HistoryListScreen -->
+    <string name="activity_title">활동</string>
+    <string name="total_runs">총 달리기</string>
+    <string name="total_km">총 km</string>
+    <string name="total_time">총 시간</string>
+    <string name="recent_runs">최근 달리기</string>
+    <string name="edit">편집</string>
+    <string name="done">완료</string>
+    <string name="no_runs_yet">아직 달리기 기록이 없습니다</string>
+    <string name="start_first_run">첫 달리기를 시작하세요!</string>
+
+    <!-- RunDetailScreen -->
+    <string name="label_kilometers">킬로미터</string>
+    <string name="session_not_found">세션을 찾을 수 없습니다</string>
+    <string name="label_duration">시간</string>
+    <string name="label_steps">걸음수</string>
+
+    <!-- SortOrder -->
+    <string name="sort_latest">최신순</string>
+    <string name="sort_distance">거리순</string>
+    <string name="sort_pace">페이스순</string>
+    <string name="sort_duration">시간순</string>
+
+    <!-- RunSessionItem -->
+    <string name="run_label">달리기</string>
+</resources>

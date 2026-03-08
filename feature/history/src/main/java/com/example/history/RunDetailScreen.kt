@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -150,7 +151,7 @@ fun RunDetailContent(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "kilometers",
+                        text = stringResource(R.string.label_kilometers),
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 2.sp
@@ -187,15 +188,15 @@ fun RunDetailContent(
                 ) {
                     DetailStatCard(
                         modifier = Modifier.weight(1f),
-                        label = "Duration",
+                        label = stringResource(R.string.label_duration),
                         value = formatDuration(session.durationMs),
                         unit = ""
                     )
                     DetailStatCard(
                         modifier = Modifier.weight(1f),
-                        label = "Avg Pace",
+                        label = stringResource(R.string.label_avg_pace),
                         value = session.averagePace,
-                        unit = "min/km"
+                        unit = stringResource(R.string.unit_min_km)
                     )
                 }
 
@@ -207,15 +208,15 @@ fun RunDetailContent(
                 ) {
                     DetailStatCard(
                         modifier = Modifier.weight(1f),
-                        label = "Cadence",
+                        label = stringResource(R.string.label_cadence),
                         value = session.averageCadence?.toString() ?: "0",
-                        unit = "spm"
+                        unit = stringResource(R.string.unit_spm)
                     )
                     DetailStatCard(
                         modifier = Modifier.weight(1f),
-                        label = "Heart Rate",
+                        label = stringResource(R.string.label_heart_rate),
                         value = session.averageHeartRate?.toString() ?: "0",
-                        unit = "bpm",
+                        unit = stringResource(R.string.unit_bpm),
                         valueColor = MaterialTheme.colorScheme.tertiary
                     )
                 }
@@ -228,16 +229,16 @@ fun RunDetailContent(
                 ) {
                     DetailStatCard(
                         modifier = Modifier.weight(1f),
-                        label = "Calories",
+                        label = stringResource(R.string.label_calories),
                         value = "${session.calories}",
-                        unit = "kcal",
+                        unit = stringResource(R.string.unit_kcal),
                         valueColor = MaterialTheme.colorScheme.secondary
                     )
                     DetailStatCard(
                         modifier = Modifier.weight(1f),
-                        label = "Steps",
+                        label = stringResource(R.string.label_steps),
                         value = if (session.totalSteps > 0) "${session.totalSteps}" else "0",
-                        unit = "steps"
+                        unit = stringResource(R.string.unit_steps)
                     )
                 }
 
@@ -249,7 +250,7 @@ fun RunDetailContent(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Session not found",
+                    text = stringResource(R.string.session_not_found),
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                     fontSize = 18.sp
                 )

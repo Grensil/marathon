@@ -41,6 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -96,7 +97,7 @@ fun HistoryListContent(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Activity",
+            text = stringResource(R.string.activity_title),
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
@@ -118,9 +119,9 @@ fun HistoryListContent(
                     .padding(20.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                SummaryItem(label = "Total Runs", value = "${stats.totalRuns}")
-                SummaryItem(label = "Total km", value = totalDistanceFormatted)
-                SummaryItem(label = "Total Time", value = totalTimeFormatted)
+                SummaryItem(label = stringResource(R.string.total_runs), value = "${stats.totalRuns}")
+                SummaryItem(label = stringResource(R.string.total_km), value = totalDistanceFormatted)
+                SummaryItem(label = stringResource(R.string.total_time), value = totalTimeFormatted)
             }
         }
 
@@ -132,7 +133,7 @@ fun HistoryListContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Recent Runs",
+                text = stringResource(R.string.recent_runs),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
@@ -144,7 +145,7 @@ fun HistoryListContent(
                 // Edit button
                 TextButton(onClick = { isEditMode = !isEditMode }) {
                     Text(
-                        text = if (isEditMode) "Done" else "Edit",
+                        text = if (isEditMode) stringResource(R.string.done) else stringResource(R.string.edit),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = if (isEditMode) MaterialTheme.colorScheme.primary
@@ -156,7 +157,7 @@ fun HistoryListContent(
                 Box {
                     TextButton(onClick = { showSortMenu = true }) {
                         Text(
-                            text = sortOrder.label,
+                            text = stringResource(sortOrder.labelRes),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -177,7 +178,7 @@ fun HistoryListContent(
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        text = order.label,
+                                        text = stringResource(order.labelRes),
                                         fontWeight = if (order == sortOrder) FontWeight.Bold
                                         else FontWeight.Normal,
                                         color = if (order == sortOrder) MaterialTheme.colorScheme.primary
@@ -206,14 +207,14 @@ fun HistoryListContent(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "No runs yet",
+                        text = stringResource(R.string.no_runs_yet),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Start your first run!",
+                        text = stringResource(R.string.start_first_run),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
                     )
@@ -362,7 +363,7 @@ private fun RunSessionItem(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Run - ${timeFormat.format(Date(session.startTime))}",
+                    text = "${stringResource(R.string.run_label)} - ${timeFormat.format(Date(session.startTime))}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -380,7 +381,7 @@ private fun RunSessionItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                     Text(
-                        text = session.averagePace + " /km",
+                        text = session.averagePace + " " + stringResource(R.string.unit_per_km),
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -395,7 +396,7 @@ private fun RunSessionItem(
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "km",
+                    text = stringResource(R.string.unit_km),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
